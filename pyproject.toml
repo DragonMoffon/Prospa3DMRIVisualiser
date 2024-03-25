@@ -1,0 +1,18 @@
+[project]
+name="Prospa3DMRI"
+description="A visualiser of 3D MRI data"
+license = {text = "MIT License"}
+readme="README.md"
+version="25.3.2024a"
+dynamic=["version"]
+dependencies=[
+    "arcade>=3.0.0.dev25",
+    "imgui[pyglet]"
+]
+requires-python= ">= 3.11"
+authors =  [
+    {name = "A J Andrews", email = "aand417@aucklanuni.ac.nz"}
+]
+maintainers = [
+    {name = "A J Andrews", email = "aand417@aucklanuni.ac.nz"}
+]
