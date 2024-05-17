@@ -1,10 +1,9 @@
 [project]
-name="Prospa3DMRI"
+name="pyMRI"
 description="A visualiser of 3D MRI data"
 license = {text = "MIT License"}
 readme="README.md"
-version="25.3.2024a"
-dynamic=["version"]
+version="2024.05.17.1"
 dependencies=[
     "arcade>=3.0.0.dev27",
     "imgui[pyglet]"
