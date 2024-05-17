@@ -2,6 +2,7 @@
 LOADING THE DATA FROM A GIVEN FOLDER LOCATION (acqu.par [text], data.3d [little endian bytes])
 """
 from typing import NamedTuple
+from struct import unpack
 
 from pyMRI.config import MRIConfig
 
@@ -34,5 +35,20 @@ def get_scan_config(config: MRIConfig) -> ScanConfig:
     )
 
 
+_HEADER_SIZE = 0x00020
+_HEADER_FORMAT = '<4s 4s 4s i i i i i'
+_LINE_SIZE = 0x00010
+
+
 def load_scan(mri_config: MRIConfig, scan_config: ScanConfig):
-    pass
+    file_path = f"{mri_config.path}\\{mri_config.data_name}"
+
+    with open(file_path, "rb") as data_file:
+        header = unpack(_HEADER_FORMAT, data_file.read(_HEADER_SIZE))
+        print(header[0][::-1], header[1][::-1], header[2][::-1], header[3:])
+        for line in iter(lambda: data_file.read(_LINE_SIZE), b''):
+            if not line:
+                break
+
+            data = unpack('<f f f f', line)
+            print(data)

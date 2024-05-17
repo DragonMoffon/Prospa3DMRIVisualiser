@@ -1,5 +1,5 @@
 from pyMRI.config import MRIConfig
-from pyMRI.data_loading import ScanConfig
+from pyMRI.data_loading import ScanConfig, load_scan
 
 from arcade import Window
 
@@ -10,3 +10,5 @@ class MRIWindow(Window):
         super().__init__(mri_config.screen_width, mri_config.screen_height, "Prospa 3D MRI visualiser")
         self.mri_config: MRIConfig = mri_config
         self.scan_config: ScanConfig = scan_config
+
+        load_scan(mri_config, scan_config)
