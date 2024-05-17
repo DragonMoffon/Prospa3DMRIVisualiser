@@ -6,6 +6,7 @@ readme="README.md"
 version="2024.05.17.1"
 dependencies=[
     "arcade>=3.0.0.dev27",
+    "numpy>=1.26",
     "imgui[pyglet]"
 ]
 requires-python= ">= 3.12"
