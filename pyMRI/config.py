@@ -20,7 +20,8 @@ def configure(*args):
     parser.add_argument('--w', '--width', dest='screen_width', action='store', type=int, default=1280)
     parser.add_argument('--h', '--height', dest='screen_height', action='store', type=int, default=720)
     parser.add_argument('--acqu', '--acqu_name', '--config', dest='acqu', action='store', type=str, default='acqu.par')
-    parser.add_argument('--data', '--data_name', '--scan', dest='data', action='store', type=str, default='data.3d')
+    parser.add_argument('--data', '--data_name', '--scan', dest='data', action='store', type=str, default='data')
+    parser.add_argument('--type', '--mode', dest='type', action='store', type=str, default='3d')
 
     parsed_args = parser.parse_args(args)
     return MRIConfig(
@@ -28,5 +29,5 @@ def configure(*args):
         parsed_args.screen_width,
         parsed_args.screen_height,
         parsed_args.acqu,
-        parsed_args.data
+        f"{parsed_args.data}.{parsed_args.type}"
     )

@@ -6,5 +6,4 @@ from sys import argv
 if __name__ == '__main__':
     mri_config = configure(*argv[1:])
     scan_config = get_scan_config(mri_config)
-    load_scan(mri_config, scan_config)
-    # launch(mri_config, scan_config)
+    launch(mri_config, scan_config)
