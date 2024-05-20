@@ -3,6 +3,8 @@ import numpy as np
 from pyMRI.config import MRIConfig
 from pyMRI.data_loading import ScanConfig, load_scan
 
+from pyMRI.rendering.voxel import VoxelRenderer
+
 from arcade import Window, SpriteSolidColor, SpriteList, camera
 
 
@@ -19,6 +21,10 @@ class MRIWindow(Window):
         self._camera = camera.Camera2D(position=(0.0, 0.0))
 
         self._scan_images = load_scan(mri_config, scan_config)
+        self._scan_data = np.zeros([scan_config.phase_2_count, scan_config.phase_1_count, scan_config.read_count], dtype=np.complexfloating)
+        for idx in range(0, scan_config.phase_2_count):
+            img = self._scan_images[idx]
+            self._scan_data[idx] = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(img, axes=[-2, -1]), norm='ortho'), axes=[-2, -1])
 
         self._current_image: int = 0
 
@@ -32,10 +38,12 @@ class MRIWindow(Window):
 
         self._dirty = True
 
+        self._renderer = VoxelRenderer(mri_config, scan_config, self._scan_data)
+
     def colour_sprites(self):
         self._dirty = False
 
-        data = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(self._scan_images[self._current_image], axes=[-2, -1]), norm='ortho'), axes=[-2, -1])
+        data = self._scan_data[self._current_image]
         data = np.abs(data)
         greatest = np.max(data)
         data = data / greatest
