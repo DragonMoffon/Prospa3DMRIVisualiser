@@ -11,11 +11,11 @@ from pyMRI.config import MRIConfig
 
 class ScanConfig(NamedTuple):
     orient: str
-    phase_1_FOV: int
     phase_2_FOV: int
+    phase_1_FOV: int
     read_FOV: int
-    phase_1_count: int
     phase_2_count: int
+    phase_1_count: int
     read_count: int
 
 
@@ -28,12 +28,12 @@ def get_scan_config(config: MRIConfig) -> ScanConfig:
 
     return ScanConfig(
         args['orient'],
-        int(args['FOVp1']),
         int(args['FOVp2']),
+        int(args['FOVp1']),
         int(args['FOVr']),
-        int(args['Nphase1']),
         int(args['Nphase2']),
-        int(args['Nread'])
+        int(args['Nphase1']),
+        int(args['Nread']),
     )
 
 
