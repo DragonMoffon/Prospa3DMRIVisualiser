@@ -89,7 +89,7 @@ vec3 dda(in vec3 enter_pos, in vec3 direction){
         emission = emission + colour * transmission;
 
         if (!(0 <= n.x && n.x < i_width && 0 <= n.y && n.y < i_height && 0 <= n.z && n.z < i_depth)){
-            return emission;
+            return vec3(1 - transmission);
         }
 
         l = n;
