@@ -5,7 +5,7 @@ from arcade.math import quaternion_rotation
 
 from pyglet.math import Vec2, Vec3
 
-LOOK_SENSITIVITY: float = 1.0
+LOOK_SENSITIVITY: float = 60.0
 ROLL_SPEED: float = 60.0
 MOVE_SPEED: float = 60.0
 
@@ -73,6 +73,7 @@ class FlyAroundGrip:
         self._win.remove_handlers(
             self.on_mouse_motion,
             self.on_mouse_drag,
+            self.on_mouse_scroll,
             self.on_key_press,
             self.on_key_release,
             self.on_update
@@ -134,8 +135,8 @@ class FlyAroundGrip:
         camera = self._camera_data
 
         if self._pitch_velocity or self._yaw_velocity:
-            self._pitch = min(max(self._pitch + LOOK_SENSITIVITY * self._pitch_velocity, -89.0), 89.0)
-            self._yaw = (self._yaw + LOOK_SENSITIVITY * self._yaw_velocity) % 360
+            self._pitch = min(max(self._pitch + LOOK_SENSITIVITY * delta_time * self._pitch_velocity, -89.0), 89.0)
+            self._yaw = (self._yaw + LOOK_SENSITIVITY * delta_time * self._yaw_velocity) % 360
 
             camera.up = self._global_up
             camera.forward = quaternion_rotation(self._global_up, (0.0, 0.0, -1.0), self._yaw)

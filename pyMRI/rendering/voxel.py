@@ -38,12 +38,15 @@ class VoxelRenderer:
         self._point_data: np.ndarray[..., np.dtype[np.float64]] = None
         self._point_buffer: gl.Buffer = ctx.buffer(reserve=(_BUFFER_HEADER_SIZE + 4 * scan_config.read_count * scan_config.phase_1_count * scan_config.phase_2_count))
 
-        with path(shaders, 'gradient_test.png') as p: self._density_gradient: gl.Texture2D = ctx.load_texture(p)
+        with path(shaders, 'gradient_rainbow_clipped.png') as p: self._density_gradient: gl.Texture2D = ctx.load_texture(p)
+        print(self._density_gradient.components)
 
         self._dda_shader = ctx.program(
             vertex_shader=read_text(shaders, 'fullscreen_dda3d_vs.glsl'),
             fragment_shader=read_text(shaders, 'fullscreen_dda3d_fs.glsl')
         )
+        self._dda_shader['emission_strength'] = 0.05
+
         self._dda_geometry = ctx.geometry(
             content=[
                 gl.BufferDescription(
@@ -77,8 +80,11 @@ class VoxelRenderer:
         self._point_buffer.write(byte_data)
 
     def update_raw_data(self, new_data: np.ndarray[..., np.dtype[np.complexfloating]]):
-        self._point_data = new_data
+        self._raw_data = new_data
         self._process_data()
+
+    def get_histogram(self):
+        return np.histogram(self._point_data, bins=max(1, int(np.max(self._point_data) - np.min(self._point_data)) // 4))
 
     def draw(self):
         # figure out the h_size of
@@ -93,3 +99,11 @@ class VoxelRenderer:
 
         self._point_buffer.bind_to_storage_buffer()
         self._dda_geometry.render(self._dda_shader)
+
+    @property
+    def emission(self):
+        return self._dda_shader['emission_strength']
+
+    @emission.setter
+    def emission(self, new_emission):
+        self._dda_shader['emission_strength'] = new_emission

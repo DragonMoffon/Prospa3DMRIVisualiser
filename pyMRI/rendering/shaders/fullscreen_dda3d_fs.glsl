@@ -7,6 +7,8 @@ uniform vec3 camera_data;
 
 uniform sampler2D gradient;
 
+uniform float emission_strength;
+
 readonly buffer density_data {
     int i_width;
     int i_height;
@@ -82,14 +84,14 @@ vec3 dda(in vec3 enter_pos, in vec3 direction){
 
         int idx = get_idx(l.x, l.y, l.z);
         float voxel_density = density[idx];
+        vec4 colour = texture(gradient, vec2(voxel_density, 0.5));
+
         float voxel_transmition = exp(-voxel_density * 0.1 * (t_c - t_o));
         transmission = transmission * voxel_transmition;
-
-        vec3 colour = texture(gradient, vec2(voxel_density, 0.5)).xyz;
-        emission = emission + colour * transmission;
+        emission = emission + colour.xyz * (1 - transmission) * emission_strength * colour.a;
 
         if (!(0 <= n.x && n.x < i_width && 0 <= n.y && n.y < i_height && 0 <= n.z && n.z < i_depth)){
-            return vec3(1 - transmission);
+            return emission;
         }
 
         l = n;

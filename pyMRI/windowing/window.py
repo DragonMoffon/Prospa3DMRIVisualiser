@@ -7,6 +7,7 @@ from pyMRI.rendering.fly_around_grip import FlyAroundGrip
 from pyMRI.rendering.voxel import VoxelRenderer, Mode
 
 from pyMRI.gui.menu import GuiMenu
+from pyMRI.gui.colouring import ColouringTab
 
 from arcade import Window, SpriteSolidColor, SpriteList, camera, key
 
@@ -26,12 +27,12 @@ class MRIWindow(Window):
         self._camera.projection.far = 1000.0
         self._camera.view.position = (0.0, 0.0, -40.0)
         self._grip = FlyAroundGrip(self._camera.view)
-        self._grip.toggle()
 
         self._scan_images = load_scan(mri_config, scan_config)
-        self._scan_data = np.zeros([scan_config.phase_2_count, scan_config.phase_1_count, scan_config.read_count], dtype=np.complexfloating)
+        self._scan_data = np.ones([scan_config.phase_2_count, scan_config.phase_1_count, scan_config.read_count], dtype=np.complexfloating)
         for idx in range(0, scan_config.phase_2_count):
             img = self._scan_images[idx]
+            # self._scan_data[idx] = img
             self._scan_data[idx] = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(img, axes=[-2, -1]), norm='ortho'), axes=[-2, -1])
             # self._scan_data[idx] = np.fft.ifft2(img, norm='ortho')
 
@@ -46,10 +47,12 @@ class MRIWindow(Window):
                 self._grid[(x, y)] = sprite
                 self._grid_sprites.append(sprite)
 
-        self._dirty = True
-
         self._renderer = VoxelRenderer(mri_config, scan_config, self._scan_data, self._camera, Mode.MAGNITUDE)
-        self._gui_menu = GuiMenu()
+        self._gui_menu = GuiMenu((ColouringTab(self._renderer),))
+
+        self._grip.toggle()
+
+        self._dirty = True
 
     def colour_sprites(self):
         self._dirty = False
@@ -75,6 +78,7 @@ class MRIWindow(Window):
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == key.GRAVE:
             self._grip.toggle()
+            self._gui_menu.toggle()
 
     def on_draw(self):
         self.clear()
