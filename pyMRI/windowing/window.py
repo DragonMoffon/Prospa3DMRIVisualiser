@@ -6,6 +6,8 @@ from pyMRI.data_loading import ScanConfig, load_scan
 from pyMRI.rendering.fly_around_grip import FlyAroundGrip
 from pyMRI.rendering.voxel import VoxelRenderer, Mode
 
+from pyMRI.gui.menu import GuiMenu
+
 from arcade import Window, SpriteSolidColor, SpriteList, camera, key
 
 SPRITE_SIZE = 8
@@ -46,6 +48,7 @@ class MRIWindow(Window):
         self._dirty = True
 
         self._renderer = VoxelRenderer(mri_config, scan_config, self._scan_data, self._camera, Mode.MAGNITUDE)
+        self._gui_menu = GuiMenu()
 
     def colour_sprites(self):
         self._dirty = False
@@ -78,3 +81,5 @@ class MRIWindow(Window):
             self.colour_sprites()
 
         self._renderer.draw()
+
+        self._gui_menu.draw()

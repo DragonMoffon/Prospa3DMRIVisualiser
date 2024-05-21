@@ -15,6 +15,7 @@ class FlyAroundGrip:
         self._win = get_window()
         self._win.push_handlers()
         self._camera_data = data
+        data.forward = (0.0, 0.0, 1.0)
 
         self._forward_velocity: float = 0.0
 

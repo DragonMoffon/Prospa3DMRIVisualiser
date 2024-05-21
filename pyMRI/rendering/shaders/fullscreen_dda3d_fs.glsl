@@ -56,6 +56,7 @@ vec3 dda(in vec3 enter_pos, in vec3 direction){
     );
 
     vec3 emission = vec3(0.0);
+    float transmission = 1.0;
     float t_c = 0.0;
     float t_o = 0.0;
     ivec3 n = i;
@@ -78,10 +79,14 @@ vec3 dda(in vec3 enter_pos, in vec3 direction){
         }
 
         int idx = get_idx(l.x, l.y, l.z);
+        float voxel_density = density[idx];
+        transmission = transmission * exp(-voxel_density * (t_c - t_o));
 
-        emission = emission + density[idx] * (t_c - t_o);
+        vec3 colour = vec3(1.0);
+        emission = emission + colour * transmission * 0.05;
+
         if (!(0 <= n.x && n.x < i_width && 0 <= n.y && n.y < i_height && 0 <= n.z && n.z < i_depth)){
-            return 1 - exp(-emission);
+            return vec3(1 - transmission);
         }
 
         l = n;
