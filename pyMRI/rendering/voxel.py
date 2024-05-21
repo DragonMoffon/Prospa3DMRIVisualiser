@@ -3,7 +3,7 @@ from struct import pack
 from enum import Enum
 from math import radians, tan
 
-from importlib.resources import read_text
+from importlib.resources import read_text, path
 import pyMRI.rendering.shaders as shaders
 
 import numpy as np
@@ -38,6 +38,8 @@ class VoxelRenderer:
         self._point_data: np.ndarray[..., np.dtype[np.float64]] = None
         self._point_buffer: gl.Buffer = ctx.buffer(reserve=(_BUFFER_HEADER_SIZE + 4 * scan_config.read_count * scan_config.phase_1_count * scan_config.phase_2_count))
 
+        with path(shaders, 'gradient_test.png') as p: self._density_gradient: gl.Texture2D = ctx.load_texture(p)
+
         self._dda_shader = ctx.program(
             vertex_shader=read_text(shaders, 'fullscreen_dda3d_vs.glsl'),
             fragment_shader=read_text(shaders, 'fullscreen_dda3d_fs.glsl')
@@ -65,7 +67,7 @@ class VoxelRenderer:
                 self._point_data = self._raw_data * (0-1j)
 
         linear_data = np.reshape(self._point_data, -1)
-        linear_data = linear_data / (np.max(linear_data) * 10)
+        linear_data = linear_data / np.max(linear_data)
         default_cell_size = self._scan.read_FOV / self._scan.read_count
 
         phase_1_FOV = self._scan.phase_1_FOV if self._scan.phase_1_FOV else self._scan.phase_1_count * default_cell_size
@@ -87,6 +89,7 @@ class VoxelRenderer:
 
         self._dda_shader['camera_data'] = x, y, projection.near
         self._dda_shader['inv_view'] = ~self._projector.generate_view_matrix()
+        self._density_gradient.use(0)
 
         self._point_buffer.bind_to_storage_buffer()
         self._dda_geometry.render(self._dda_shader)

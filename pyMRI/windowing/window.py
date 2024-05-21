@@ -33,6 +33,7 @@ class MRIWindow(Window):
         for idx in range(0, scan_config.phase_2_count):
             img = self._scan_images[idx]
             self._scan_data[idx] = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(img, axes=[-2, -1]), norm='ortho'), axes=[-2, -1])
+            # self._scan_data[idx] = np.fft.ifft2(img, norm='ortho')
 
         self._current_image: int = 0
 

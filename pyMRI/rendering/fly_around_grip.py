@@ -1,6 +1,7 @@
 from arcade import get_window, key
 from arcade.camera import CameraData, grips
 from arcade.camera.data_types import constrain_camera_data
+from arcade.math import quaternion_rotation
 
 from pyglet.math import Vec2, Vec3
 
@@ -22,12 +23,14 @@ class FlyAroundGrip:
         self._strafe_vertical: int = 0
         self._strafe_horizontal: int = 0
         self._accelerate_forward: int = 0
-        self._roll: int = 0
-
-        # self._rotation_direction: Vec3
-
+        self._roll_velocity: int = 0
         self._pitch_velocity: float = 0.0
         self._yaw_velocity: float = 0.0
+
+        self._pitch: float = 0.0
+        self._yaw: float = 0.0
+
+        self._global_up = (0.0, 1.0, 0.0)
 
         self._active: bool = False
 
@@ -44,7 +47,7 @@ class FlyAroundGrip:
         self._accelerate_forward = 0
         self._pitch_velocity = 0
         self._yaw_velocity = 0
-        self._roll = 0
+        self._roll_velocity = 0
 
         self._win.set_exclusive_mouse(True)
         self._win.push_handlers(
@@ -64,7 +67,7 @@ class FlyAroundGrip:
         self._accelerate_forward = 0
         self._pitch_velocity = 0
         self._yaw_velocity = 0
-        self._roll = 0
+        self._roll_velocity = 0
 
         self._win.set_exclusive_mouse(False)
         self._win.remove_handlers(
@@ -104,9 +107,9 @@ class FlyAroundGrip:
             case key.D:
                 self._strafe_horizontal += 1
             case key.Q:
-                self._roll += 1
+                self._roll_velocity += 1
             case key.E:
-                self._roll -= 1
+                self._roll_velocity -= 1
 
     def on_key_release(self, symbol, modifiers):
         match symbol:
@@ -123,26 +126,23 @@ class FlyAroundGrip:
             case key.D:
                 self._strafe_horizontal -= 1
             case key.Q:
-                self._roll -= 1
+                self._roll_velocity -= 1
             case key.E:
-                self._roll += 1
+                self._roll_velocity += 1
 
     def on_update(self, delta_time: float):
         camera = self._camera_data
 
-        if self._pitch_velocity:
-            pitch_speed = self._pitch_velocity * LOOK_SENSITIVITY
-            camera.up, camera.forward = grips.rotate_around_right(camera, pitch_speed)
+        if self._pitch_velocity or self._yaw_velocity:
+            self._pitch = min(max(self._pitch + LOOK_SENSITIVITY * self._pitch_velocity, -89.0), 89.0)
+            self._yaw = (self._yaw + LOOK_SENSITIVITY * self._yaw_velocity) % 360
 
-        if self._yaw_velocity:
-            yaw_speed = self._yaw_velocity * LOOK_SENSITIVITY
-            camera.forward = grips.rotate_around_up(camera, yaw_speed)
+            camera.up = self._global_up
+            camera.forward = quaternion_rotation(self._global_up, (0.0, 0.0, -1.0), self._yaw)
+            camera.up, camera.forward = grips.rotate_around_right(camera, self._pitch)
 
-        if self._roll:
-            roll_speed = ROLL_SPEED * delta_time * self._roll
-            camera.up = grips.rotate_around_forward(camera, roll_speed)
-
-        constrain_camera_data(camera, forward_priority=True)
+            self._pitch_velocity = 0.0
+            self._yaw_velocity = 0.0
 
         if self._accelerate_forward:
             o_pos = camera.position
@@ -154,5 +154,5 @@ class FlyAroundGrip:
             strafe = Vec2(self._strafe_horizontal, self._strafe_vertical).normalize() * MOVE_SPEED * delta_time
             camera.position = grips.strafe(camera, strafe)
 
-        self._pitch_velocity = 0.0
-        self._yaw_velocity = 0.0
+
+
