@@ -38,7 +38,7 @@ class VoxelRenderer:
         self._point_data: np.ndarray[..., np.dtype[np.float64]] = None
         self._point_buffer: gl.Buffer = ctx.buffer(reserve=(_BUFFER_HEADER_SIZE + 4 * scan_config.read_count * scan_config.phase_1_count * scan_config.phase_2_count))
 
-        with path(shaders, 'gradient_rainbow_clipped.png') as p: self._density_gradient: gl.Texture2D = ctx.load_texture(p)
+        with path(shaders, 'gradient_rainbow.png') as p: self._density_gradient: gl.Texture2D = ctx.load_texture(p)
         print(self._density_gradient.components)
 
         self._dda_shader = ctx.program(

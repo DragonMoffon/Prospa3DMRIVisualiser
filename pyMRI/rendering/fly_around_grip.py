@@ -1,6 +1,5 @@
 from arcade import get_window, key
 from arcade.camera import CameraData, grips
-from arcade.camera.data_types import constrain_camera_data
 from arcade.math import quaternion_rotation
 
 from pyglet.math import Vec2, Vec3
