@@ -38,17 +38,15 @@ class VoxelRenderer:
         self._point_data: np.ndarray[..., np.dtype[np.float64]] = None
         self._point_buffer: gl.Buffer = ctx.buffer(reserve=(_BUFFER_HEADER_SIZE + 4 * scan_config.read_count * scan_config.phase_1_count * scan_config.phase_2_count))
 
-        with path(shaders, 'gradient_rainbow_clipped.png') as p: self._density_gradient: gl.Texture2D = ctx.load_texture(p)
+        with path(shaders, 'gradient_rainbow.png') as p: self._density_gradient: gl.Texture2D = ctx.load_texture(p)
         print(self._density_gradient.components)
 
         self._dda_shader = ctx.program(
             vertex_shader=read_text(shaders, 'fullscreen_dda3d_vs.glsl'),
             fragment_shader=read_text(shaders, 'fullscreen_dda3d_fs.glsl')
         )
-        try:
-            self._dda_shader['emission_strength'] = 0.05
-        except KeyError:
-            pass
+        self.emission_brightness = 0.05
+        self.density_scalar = 1.0
 
         self._dda_geometry = ctx.geometry(
             content=[
@@ -110,16 +108,12 @@ class VoxelRenderer:
 
         self._win.ctx.blend_func = old_func
 
-    @property
-    def emission(self):
-        try:
-            return self._dda_shader['emission_strength']
-        except KeyError:
-            return 1.0
+    def __getattr__(self, item):
+        if item in self.__dict__['_dda_shader']._uniforms:
+            return self._dda_shader[item]
+        return super().__getattribute__(item)
 
-    @emission.setter
-    def emission(self, new_emission):
-        try:
-            self._dda_shader['emission_strength'] = new_emission
-        except KeyError:
-            pass
+    def __setattr__(self, key, value):
+        if '_dda_shader' in self.__dict__ and key in self.__dict__['_dda_shader']._uniforms:
+            self._dda_shader[key] = value
+        super().__setattr__(key, value)

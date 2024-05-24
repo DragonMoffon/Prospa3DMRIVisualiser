@@ -36,5 +36,6 @@ class ColouringTab(GuiTab):
 
         )
         imgui.pop_item_width()
-        _, self._renderer.emission = imgui.slider_float("Emission Strength", self._renderer.emission, 0.001, 1.0)
+        _, self._renderer.density_scalar = imgui.slider_float("Density Scalar", self._renderer.density_scalar, 0.001, 1.0)
+        _, self._renderer.emission_brightness = imgui.slider_float("Emission Brightness", self._renderer.emission_brightness, 0.001, 1.0)
 
