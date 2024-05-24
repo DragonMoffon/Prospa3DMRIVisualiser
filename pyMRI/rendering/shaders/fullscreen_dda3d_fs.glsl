@@ -23,6 +23,32 @@ int get_idx(int x, int y, int z){
     return (z * i_width * i_height) + (y * i_width) + x;
 }
 
+float sample_density(vec3 position){
+    int x0 = int(trunc(position.x)); int y0 =  int(trunc(position.y)); int z0 = int(trunc(position.z));
+    int x1 = x0 + 1; int y1 = y0 + 1; int z1 = z0 + 1;
+    vec3 dp = mod(position, vec3(1.0));
+    vec3 idp = 1 - dp;
+
+    float d000 = density[get_idx(x0, y0, z0)];
+    float d001 = z1 >= i_depth ? 0.0 : density[get_idx(x0, y0, z1)];
+    float d010 = y1 >= i_height ? 0.0 : density[get_idx(x0, y1, z0)];
+    float d011 = y1 >= i_height || z1 >= i_depth ? 0.0 : density[get_idx(x0, y1, z1)];
+    float d100 = x1 >= i_width? 0.0 : density[get_idx(x1, y0, z0)];
+    float d101 = x1 >= i_height || z1 >= i_depth ? 0.0 : density[get_idx(x1, y0, z1)];;
+    float d110 = x1 >= i_height || y1 >= i_depth ? 0.0 : density[get_idx(x1, y1, z0)];;
+    float d111 = x1 >= i_width || y1 >= i_height || z1 >= i_depth ? 0.0 : density[get_idx(x1, y1, z1)];;
+
+    float d00 = d000 * idp.x + d100 * dp.x;
+    float d01 = d001 * idp.x + d101 * dp.x;
+    float d10 = d010 * idp.x + d110 * dp.x;
+    float d11 = d011 * idp.x + d111 * dp.x;
+
+    float d0 = d00 * idp.y + d10 * dp.y;
+    float d1 = d01 * idp.y + d11 * dp.y;
+
+    return d0 * idp.z + d1 * dp.z;
+}
+
 bool in_bounds(vec3 point){
     return (0 <= point.x && point.x <= width) && (0 <= point.y && point.y <= height) && (0 <= point.z && point.z <= depth);
 }
@@ -41,7 +67,7 @@ float intersect_plane(vec3 R0, vec3 Rd, vec3 Pn, float D){
 
 
 // Get the pixel brightness at this point
-vec3 dda(in vec3 enter_pos, in vec3 direction){
+vec4 dda(in vec3 enter_pos, in vec3 direction){
     vec3 cell_size = vec3(width, height, depth) / vec3(i_width, i_height, i_depth);
 
     ivec3 i = ivec3(trunc(enter_pos / cell_size));
@@ -83,15 +109,16 @@ vec3 dda(in vec3 enter_pos, in vec3 direction){
         }
 
         int idx = get_idx(l.x, l.y, l.z);
-        float voxel_density = density[idx];
+
+        float voxel_density = 1.0; // density[idx];
         vec4 colour = texture(gradient, vec2(voxel_density, 0.5));
 
-        float voxel_transmition = exp(-voxel_density * 0.1 * (t_c - t_o));
+        float voxel_transmition = exp(-voxel_density * 0.1 * (t_c - t_o) * colour.a);
         transmission = transmission * voxel_transmition;
-        emission = emission + colour.xyz * (1 - transmission) * emission_strength * colour.a;
-
+        emission = emission * (1 - transmission * colour.a) + colour.xyz * transmission * colour.a;
         if (!(0 <= n.x && n.x < i_width && 0 <= n.y && n.y < i_height && 0 <= n.z && n.z < i_depth)){
-            return emission;
+            // return vec3(1 - transmission);
+            return vec4(transmission * (1 - transmission + emission_strength * 0.00001));
         }
 
         l = n;
@@ -158,5 +185,5 @@ void main() {
     }
 
     // colour_fs = vec4(mod(dda_start, cell_size), 1.0);
-    colour_fs = vec4(dda(dda_start, direction), 1.0);
+    colour_fs = dda(dda_start, direction);
 }

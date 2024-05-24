@@ -13,7 +13,7 @@ from arcade.camera import PerspectiveProjector
 import arcade.gl as gl
 
 from pyMRI.config import MRIConfig
-from pyMRI.data_loading import ScanConfig
+from pyMRI.data_loading import ScanConfig, interpolate_scan
 
 
 class Mode(Enum):
@@ -69,14 +69,15 @@ class VoxelRenderer:
             case Mode.IMAG:
                 self._point_data = self._raw_data * (0-1j)
 
-        linear_data = np.reshape(self._point_data, -1)
+        scn_cfg, linear_data = interpolate_scan(self._mri, self._scan, self._point_data)
+
+        linear_data = np.reshape(linear_data, -1)
         linear_data = linear_data / np.max(linear_data)
-        default_cell_size = self._scan.read_FOV / self._scan.read_count
 
-        phase_1_FOV = self._scan.phase_1_FOV if self._scan.phase_1_FOV else self._scan.phase_1_count * default_cell_size
-        phase_2_FOV = self._scan.phase_2_FOV if self._scan.phase_2_FOV else self._scan.phase_2_count * default_cell_size
+        print(self._scan.read_count, self._scan.phase_1_count, self._scan.phase_2_count)
+        print(scn_cfg.read_count, scn_cfg.phase_1_count, scn_cfg.phase_2_count)
 
-        byte_data = pack(f'i i i f f f {len(linear_data)}f', self._scan.read_count, self._scan.phase_1_count, self._scan.phase_2_count, self._scan.read_FOV, phase_1_FOV, phase_2_FOV, *linear_data)
+        byte_data = pack(f'i i i f f f {len(linear_data)}f', scn_cfg.read_count, scn_cfg.phase_1_count, scn_cfg.phase_2_count, scn_cfg.read_FOV, scn_cfg.phase_1_FOV, scn_cfg.phase_2_FOV, *linear_data)
         self._point_buffer.write(byte_data)
 
     def update_raw_data(self, new_data: np.ndarray[..., np.dtype[np.complexfloating]]):
@@ -84,7 +85,8 @@ class VoxelRenderer:
         self._process_data()
 
     def get_histogram(self):
-        return np.histogram(self._point_data, bins=max(1, int(np.max(self._point_data) - np.min(self._point_data)) // 4))
+        scn_cfg, linear_data = interpolate_scan(self._mri, self._scan, self._point_data)
+        return np.histogram(linear_data, bins=max(1, int(np.max(self._point_data) - np.min(self._point_data)) // 4))
 
     def draw(self):
         # figure out the h_size of
@@ -97,8 +99,13 @@ class VoxelRenderer:
         self._dda_shader['inv_view'] = ~self._projector.generate_view_matrix()
         self._density_gradient.use(0)
 
+        old_func = self._win.ctx.blend_func
+        self._win.ctx.blend_func = self._win.ctx.BLEND_DEFAULT
+
         self._point_buffer.bind_to_storage_buffer()
         self._dda_geometry.render(self._dda_shader)
+
+        self._win.ctx.blend_func = old_func
 
     @property
     def emission(self):

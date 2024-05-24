@@ -81,7 +81,7 @@ class MRIWindow(Window):
             self._gui_menu.toggle()
 
     def on_draw(self):
-        self.clear()
+        self.clear(color=(0, 0, 0, 0))
         if self._dirty:
             self.colour_sprites()
 

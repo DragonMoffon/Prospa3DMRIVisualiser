@@ -5,8 +5,10 @@ from typing import NamedTuple
 from struct import unpack
 
 import numpy as np
+from scipy.interpolate import RegularGridInterpolator
+from scipy.signal import resample_poly, resample
 
-from pyMRI.config import MRIConfig
+from pyMRI.config import MRIConfig, InterpolateMode
 
 
 class ScanConfig(NamedTuple):
@@ -26,10 +28,15 @@ def get_scan_config(config: MRIConfig) -> ScanConfig:
         lines = acqu_file.readlines()
         args = {line.split(" = ")[0]: line.split("=")[1].strip().strip("\"") for line in lines}
 
+    default_cell_size = int(args['FOVr']) / int(args['Nread'])
+
+    phase_1_fov = int(args['FOVp1']) if int(args['FOVp1']) else int(args['Nphase1']) * default_cell_size
+    phase_2_fov = int(args['FOVp2']) if int(args['FOVp2']) else int(args['Nphase2']) * default_cell_size
+
     return ScanConfig(
         args['orient'],
-        int(args['FOVp2']),
-        int(args['FOVp1']),
+        phase_2_fov,
+        phase_1_fov,
         int(args['FOVr']),
         int(args['Nphase2']),
         int(args['Nphase1']),
@@ -68,5 +75,49 @@ def load_scan(mri_config: MRIConfig, scan_config: ScanConfig) -> np.ndarray[...,
     return image_array
 
 
-def transform_scan(mri_config: MRIConfig, scan_config: ScanConfig, k_space: np.ndarray[..., np.dtype[np.complexfloating]]) -> np.ndarray[..., np.dtype[np.complexfloating]]:
-    pass
+def interpolate_scan(mri_config: MRIConfig, scan_config: ScanConfig, data: np.ndarray[..., np.dtype[np.complexfloating]]) -> tuple[ScanConfig, np.ndarray[..., np.dtype[np.complexfloating]]]:
+    match mri_config.interpolate:
+        case InterpolateMode.NONE:
+            return scan_config, data
+        case InterpolateMode.EVEN:
+            raise NotImplementedError()
+        case InterpolateMode.CM:
+            raise NotImplementedError()
+        case InterpolateMode.MM:
+            raise NotImplementedError()
+        case InterpolateMode.DOUBLE:
+            interpolate_grid = RegularGridInterpolator((np.arange(scan_config.phase_2_count), np.arange(scan_config.phase_1_count), np.arange(scan_config.read_count)), data)
+            n_p2 = scan_config.phase_2_count * 2
+            n_p1 = scan_config.phase_1_count * 2
+            n_r = scan_config.read_count * 2
+            new_data = np.zeros((n_p2, n_p1, n_r), dtype=np.float64)
+
+            for x in range(n_p2):
+                dx = x * 0.5
+                for y in range(n_p1):
+                    dy = y * 0.5
+                    for z in range(n_r):
+                        dz = z * 0.5
+                        print(dx, dy, dz)
+                        print(interpolate_grid.grid)
+                        new_data[x, y, z] = interpolate_grid((dx, dy, dz))
+
+            new_scan_cfg = ScanConfig(
+                scan_config.orient,
+                scan_config.phase_2_FOV,
+                scan_config.phase_1_FOV,
+                scan_config.read_FOV,
+                scan_config.phase_2_count*2,
+                scan_config.phase_1_count*2,
+                scan_config.read_count*2
+            )
+
+            print(data.shape)
+            print(new_data.shape)
+            return new_scan_cfg, new_data
+        case InterpolateMode.TRIPLE:
+            raise NotImplementedError()
+        case InterpolateMode.QUADRUPLE:
+            raise NotImplementedError()
+
+    return scan_config, data
