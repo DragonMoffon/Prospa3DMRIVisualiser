@@ -20,7 +20,8 @@ readonly buffer density_data {
 };
 
 int get_idx(int x, int y, int z){
-    return (z * i_width * i_height) + (y * i_width) + x;
+
+    return (min(z, i_depth-1) * i_width * i_height) + (min(y, i_height-1) * i_width) + min(x, i_width-1);
 }
 
 float sample_density(vec3 position){
@@ -110,15 +111,16 @@ vec4 dda(in vec3 enter_pos, in vec3 direction){
 
         int idx = get_idx(l.x, l.y, l.z);
 
-        float voxel_density = 1.0; // density[idx];
-        vec4 colour = texture(gradient, vec2(voxel_density, 0.5));
+        vec4 colour = texture(gradient, vec2(density[idx], 0.5));
+        float voxel_density = density[idx] * colour.a;
+        float voxel_transmition = exp(-voxel_density * (t_c - t_o));
+        emission = emission + colour.rgb * transmission * (1 - voxel_transmition);
+        transmission *= voxel_transmition;
 
-        float voxel_transmition = exp(-voxel_density * 0.1 * (t_c - t_o) * colour.a);
-        transmission = transmission * voxel_transmition;
-        emission = emission * (1 - transmission * colour.a) + colour.xyz * transmission * colour.a;
         if (!(0 <= n.x && n.x < i_width && 0 <= n.y && n.y < i_height && 0 <= n.z && n.z < i_depth)){
-            // return vec3(1 - transmission);
-            return vec4(transmission * (1 - transmission + emission_strength * 0.00001));
+            return vec4(emission, 1.0);  // colour based on density and transmission
+            // return vec4(vec3(0.0), 1 - transmission);  // Darken based on transmission
+            // return vec4(vec3(1.0), 1 - transmission);  // Lighten based on transmission
         }
 
         l = n;
