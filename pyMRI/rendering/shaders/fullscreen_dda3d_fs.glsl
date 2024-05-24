@@ -114,7 +114,7 @@ vec4 dda(in vec3 enter_pos, in vec3 direction){
         vec4 colour = texture(gradient, vec2(density[idx], 0.5));
         float voxel_density = density[idx] * colour.a;
         float voxel_transmition = exp(-voxel_density * (t_c - t_o));
-        emission = emission + colour.rgb * transmission * (1 - voxel_transmition);
+        emission = emission + colour.rgb * transmission * (1 - voxel_transmition) * emission_strength;
         transmission *= voxel_transmition;
 
         if (!(0 <= n.x && n.x < i_width && 0 <= n.y && n.y < i_height && 0 <= n.z && n.z < i_depth)){
