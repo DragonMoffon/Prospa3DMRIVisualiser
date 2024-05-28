@@ -27,19 +27,13 @@ _BUFFER_HEADER_SIZE = 6 * 4  # 6 floats / ints
 
 class VoxelRenderer:
 
-    def __init__(self, mri_config: MRIConfig, scan_config: ScanConfig, raw_data: np.ndarray[..., np.dtype[np.complexfloating]], projector: PerspectiveProjector, mode: Mode = Mode.MAGNITUDE):
+    def __init__(self, projector: PerspectiveProjector):
         self._win = win = get_window()
         self._ctx = ctx = win.ctx
-        self._mri: MRIConfig = mri_config
-        self._scan: ScanConfig = scan_config
         self._projector: PerspectiveProjector = projector
-        self._mode: Mode = mode
-        self._raw_data: np.ndarray[..., np.dtype[np.complexfloating]] = raw_data
-        self._point_data: np.ndarray[..., np.dtype[np.float64]] = None
-        self._point_buffer: gl.Buffer = ctx.buffer(reserve=(_BUFFER_HEADER_SIZE + 4 * scan_config.read_count * scan_config.phase_1_count * scan_config.phase_2_count))
+        self._point_buffer: gl.Buffer = ctx.buffer(reserve=0)
 
         with path(shaders, 'gradient_rainbow.png') as p: self._density_gradient: gl.Texture2D = ctx.load_texture(p)
-        print(self._density_gradient.components)
 
         self._dda_shader = ctx.program(
             vertex_shader=read_text(shaders, 'fullscreen_dda3d_vs.glsl'),
@@ -59,9 +53,7 @@ class VoxelRenderer:
             mode=ctx.TRIANGLE_STRIP
         )
 
-        self._process_data()
-
-    def _process_data(self):
+    def update_gpu_data(self, data, data_config):
         match self._mode:
             case Mode.MAGNITUDE:
                 self._point_data = abs(self._raw_data)
@@ -81,10 +73,7 @@ class VoxelRenderer:
         byte_data = pack(f'i i i f f f {len(linear_data)}f', scn_cfg.read_count, scn_cfg.phase_1_count, scn_cfg.phase_2_count, scn_cfg.read_FOV, scn_cfg.phase_1_FOV, scn_cfg.phase_2_FOV, *linear_data)
         self._point_buffer.write(byte_data)
 
-    def update_raw_data(self, new_data: np.ndarray[..., np.dtype[np.complexfloating]]):
-        self._raw_data = new_data
-        self._process_data()
-
+    # TODO: move to MRI
     def get_histogram(self):
         scn_cfg, linear_data = interpolate_scan(self._mri, self._scan, self._point_data)
         return np.histogram(linear_data, bins=max(1, int(np.max(self._point_data) - np.min(self._point_data)) // 4))

@@ -23,7 +23,7 @@ class ColouringTab(GuiTab):
 
         self._colours = []
 
-    def draw(self):
+    def update(self):
         if self._data_histogram is None:
             self._data_histogram = self._renderer.get_histogram()
 
