@@ -1,5 +1,4 @@
 from pyMRI.config import LaunchConfig
-from pyMRI.data_loading import ScanConfig
 from pyMRI.windowing.window import MRIWindow
 
 

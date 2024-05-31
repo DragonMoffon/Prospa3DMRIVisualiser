@@ -10,8 +10,8 @@ from pyMRI.rendering.camera import CameraCarousel
 from pyMRI.rendering.voxel import VoxelRenderer
 
 from pyMRI.gui.menu import GuiMenu
-from pyMRI.gui.colouring import ColouringTab
-from pyMRI.gui.processing import ProcessingTab
+# from pyMRI.gui.colouring import ColouringTab
+# from pyMRI.gui.processing import ProcessingTab
 
 from pyMRI.gui.warning import GuiWarning, WarningMode
 

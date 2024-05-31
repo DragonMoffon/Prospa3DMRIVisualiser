@@ -3,8 +3,8 @@ from tkinter import filedialog
 from os.path import exists
 from typing import TYPE_CHECKING
 
-from pyMRI.config import MRIConfig, LaunchConfig
-from pyMRI.data_loading import ScanConfig
+from pyMRI.config import LaunchConfig
+from pyMRI.data_loading import MRIConfig, load_scan, get_scan_config
 
 from pyMRI.gui.warning import GuiWarning, WarningMode
 
@@ -26,9 +26,6 @@ class MRI:
 
         self._original_mri: MRIConfig = None
         self._mri_config: MRIConfig = None
-
-        self._original_scan: ScanConfig = None
-        self._scan_config: ScanConfig = None
 
         self._raw_read_data: np.ndarray = None
 
@@ -55,10 +52,6 @@ class MRI:
     @property
     def mri_config(self):
         return self._mri_config
-
-    @property
-    def scan_config(self):
-        return self._scan_config
 
     # File
     def load_data_dialog(self):
@@ -155,7 +148,40 @@ class MRI:
                 )
                 return
 
-        print(data_file, acqu_file)
+        if data_file[-3:] not in {".3d", ".2d", ".1d"}:
+            self.win.push_warning(
+                GuiWarning(
+                    "Invalid Data loading",
+                    "pyMRI does not currently support non-Prospa data",
+                    WarningMode.ERROR,
+                    continue_override="Try Again",
+                    cancel_override="Quit",
+                    continue_callback=self.load_data_dialog,
+                    cancel_callback=self.win.close
+                )
+            )
+            return
+
+        if acqu_file[-4:] != ".par":
+            self.win.push_warning(
+                GuiWarning(
+                    "Invalid Data loading",
+                    "Unrecognised parameter file.",
+                    WarningMode.ERROR,
+                    continue_override="Try Again",
+                    cancel_override="Quit",
+                    continue_callback=self.load_data_dialog,
+                    cancel_callback=self.win.close
+                )
+            )
+            return
+
+        mri_config = get_scan_config(acqu_file)
+
+        self._mri_config = self._original_mri = mri_config
+        self._raw_read_data = load_scan(mri_config, data_file)
+
+        self._voxel_renderer.update_gpu_data(self._raw_read_data, self._mri_config)
 
     # Processing Operations
 

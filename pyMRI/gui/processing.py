@@ -7,14 +7,11 @@ fft #
 """
 import imgui
 
-from pyMRI.data_loading import ScanConfig
-from pyMRI.config import MRIConfig
-
 from pyMRI.rendering.voxel import VoxelRenderer
 from pyMRI.gui.tab import GuiTab
 
 
-class ProcessingTab(GuiTab):
+"""class ProcessingTab(GuiTab):
 
     def __init__(self, voxel_renderer: VoxelRenderer, mri: MRIConfig, scan: ScanConfig):
         super().__init__("Processing")
@@ -25,3 +22,4 @@ class ProcessingTab(GuiTab):
 
     def update(self):
         pass
+"""

@@ -12,8 +12,7 @@ from arcade import get_window
 from arcade.camera import PerspectiveProjector
 import arcade.gl as gl
 
-from pyMRI.config import MRIConfig
-from pyMRI.data_loading import ScanConfig, interpolate_scan
+from pyMRI.data_loading import MRIConfig
 
 
 class Mode(Enum):
@@ -54,29 +53,32 @@ class VoxelRenderer:
         )
 
     def update_gpu_data(self, data, data_config):
-        match self._mode:
+        """match self._mode:
             case Mode.MAGNITUDE:
                 self._point_data = abs(self._raw_data)
             case Mode.REAL:
                 self._point_data = self._raw_data * (1+0j)
             case Mode.IMAG:
-                self._point_data = self._raw_data * (0-1j)
+                self._point_data = self._raw_data * (0-1j)"""
 
-        scn_cfg, linear_data = interpolate_scan(self._mri, self._scan, self._point_data)
+        linear_data = abs(data)
 
         linear_data = np.reshape(linear_data, -1)
         linear_data = linear_data / np.max(linear_data)
 
-        print(self._scan.read_count, self._scan.phase_1_count, self._scan.phase_2_count)
-        print(scn_cfg.read_count, scn_cfg.phase_1_count, scn_cfg.phase_2_count)
+        print(data_config.read_count, data_config.phase_1_count, data_config.phase_2_count)
 
-        byte_data = pack(f'i i i f f f {len(linear_data)}f', scn_cfg.read_count, scn_cfg.phase_1_count, scn_cfg.phase_2_count, scn_cfg.read_FOV, scn_cfg.phase_1_FOV, scn_cfg.phase_2_FOV, *linear_data)
+        _buffer_size = _BUFFER_HEADER_SIZE + len(linear_data) * 4
+        if self._point_buffer is None:
+            self._point_buffer = self._ctx.buffer(reserve=_buffer_size)
+        elif self._point_buffer.size != _buffer_size:
+            self._point_buffer.orphan(_buffer_size)
+
+        byte_data = pack(f'i i i f f f {len(linear_data)}f', data_config.read_count, data_config.phase_1_count, data_config.phase_2_count, data_config.read_FOV, data_config.phase_1_FOV, data_config.phase_2_FOV, *linear_data)
         self._point_buffer.write(byte_data)
 
     # TODO: move to MRI
-    def get_histogram(self):
-        scn_cfg, linear_data = interpolate_scan(self._mri, self._scan, self._point_data)
-        return np.histogram(linear_data, bins=max(1, int(np.max(self._point_data) - np.min(self._point_data)) // 4))
+    # return np.histogram(linear_data, bins=max(1, int(np.max(self._point_data) - np.min(self._point_data)) // 4))
 
     def draw(self):
         if self._point_buffer is None:
