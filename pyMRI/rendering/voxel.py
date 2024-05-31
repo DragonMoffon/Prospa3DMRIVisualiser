@@ -31,7 +31,7 @@ class VoxelRenderer:
         self._win = win = get_window()
         self._ctx = ctx = win.ctx
         self._projector: PerspectiveProjector = projector
-        self._point_buffer: gl.Buffer = ctx.buffer(reserve=0)
+        self._point_buffer: gl.Buffer = None
 
         with path(shaders, 'gradient_rainbow.png') as p: self._density_gradient: gl.Texture2D = ctx.load_texture(p)
 
@@ -79,6 +79,9 @@ class VoxelRenderer:
         return np.histogram(linear_data, bins=max(1, int(np.max(self._point_data) - np.min(self._point_data)) // 4))
 
     def draw(self):
+        if self._point_buffer is None:
+            return
+
         # figure out the h_size of
         zoom = self._projector.view.zoom
         projection = self._projector.projection

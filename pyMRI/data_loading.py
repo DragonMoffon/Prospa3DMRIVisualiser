@@ -5,13 +5,9 @@ from typing import NamedTuple
 from struct import unpack
 
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator
-from scipy.signal import resample_poly, resample
-
-from pyMRI.config import MRIConfig, InterpolateMode
 
 
-class ScanConfig(NamedTuple):
+class MRIConfig(NamedTuple):
     orient: str
     phase_2_FOV: int
     phase_1_FOV: int
@@ -21,10 +17,8 @@ class ScanConfig(NamedTuple):
     read_count: int
 
 
-def get_scan_config(config: MRIConfig) -> ScanConfig:
-    path = config.path
-    acqu_name = config.acqu_name
-    with open(f"{path}\\{acqu_name}", "r") as acqu_file:
+def get_scan_config(acqu_path: str) -> MRIConfig:
+    with open(acqu_path, "r") as acqu_file:
         lines = acqu_file.readlines()
         args = {line.split(" = ")[0]: line.split("=")[1].strip().strip("\"") for line in lines}
 
@@ -33,7 +27,7 @@ def get_scan_config(config: MRIConfig) -> ScanConfig:
     phase_1_fov = int(args['FOVp1']) if int(args['FOVp1']) else int(args['Nphase1']) * default_cell_size
     phase_2_fov = int(args['FOVp2']) if int(args['FOVp2']) else int(args['Nphase2']) * default_cell_size
 
-    return ScanConfig(
+    return MRIConfig(
         args['orient'],
         phase_2_fov,
         phase_1_fov,
@@ -50,17 +44,15 @@ _LINE_SIZE = 0x00010
 _COMPLEX_SIZE = 0x00008
 
 
-def load_scan(mri_config: MRIConfig, scan_config: ScanConfig) -> np.ndarray[..., np.dtype[np.complexfloating]]:
-    file_path = f"{mri_config.path}\\{mri_config.data_name}"
-
-    image_count = scan_config.phase_2_count
-    image_size = scan_config.phase_1_count, scan_config.read_count
+def load_scan(config: MRIConfig, data_path: str) -> np.ndarray[..., np.dtype[np.complexfloating]]:
+    image_count = config.phase_2_count
+    image_size = config.phase_1_count, config.read_count
     image_chunk_size = _COMPLEX_SIZE * image_size[0] * image_size[1]
     image_chunk_format = '<'+'f'*2*image_size[0]*image_size[1]
 
     image_array = np.zeros((image_count, image_size[0], image_size[1]), dtype=np.complexfloating)
 
-    with open(file_path, "rb") as data_file:
+    with open(data_path, "rb") as data_file:
         header = unpack(_HEADER_FORMAT, data_file.read(_HEADER_SIZE))
         print(header)
         for img_idx in range(image_count):
@@ -74,7 +66,7 @@ def load_scan(mri_config: MRIConfig, scan_config: ScanConfig) -> np.ndarray[...,
 
     return image_array
 
-
+"""
 def interpolate_scan(mri_config: MRIConfig, scan_config: ScanConfig, data: np.ndarray[..., np.dtype[np.complexfloating]]) -> tuple[ScanConfig, np.ndarray[..., np.dtype[np.complexfloating]]]:
     match mri_config.interpolate:
         case InterpolateMode.NONE:
@@ -121,3 +113,4 @@ def interpolate_scan(mri_config: MRIConfig, scan_config: ScanConfig, data: np.nd
             raise NotImplementedError()
 
     return scan_config, data
+"""
