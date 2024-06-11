@@ -25,32 +25,6 @@ int get_idx(int x, int y, int z){
     return (min(z, i_depth-1) * i_width * i_height) + (min(y, i_height-1) * i_width) + min(x, i_width-1);
 }
 
-float sample_density(vec3 position){
-    int x0 = int(trunc(position.x)); int y0 =  int(trunc(position.y)); int z0 = int(trunc(position.z));
-    int x1 = x0 + 1; int y1 = y0 + 1; int z1 = z0 + 1;
-    vec3 dp = mod(position, vec3(1.0));
-    vec3 idp = 1 - dp;
-
-    float d000 = density[get_idx(x0, y0, z0)];
-    float d001 = z1 >= i_depth ? 0.0 : density[get_idx(x0, y0, z1)];
-    float d010 = y1 >= i_height ? 0.0 : density[get_idx(x0, y1, z0)];
-    float d011 = y1 >= i_height || z1 >= i_depth ? 0.0 : density[get_idx(x0, y1, z1)];
-    float d100 = x1 >= i_width? 0.0 : density[get_idx(x1, y0, z0)];
-    float d101 = x1 >= i_height || z1 >= i_depth ? 0.0 : density[get_idx(x1, y0, z1)];;
-    float d110 = x1 >= i_height || y1 >= i_depth ? 0.0 : density[get_idx(x1, y1, z0)];;
-    float d111 = x1 >= i_width || y1 >= i_height || z1 >= i_depth ? 0.0 : density[get_idx(x1, y1, z1)];;
-
-    float d00 = d000 * idp.x + d100 * dp.x;
-    float d01 = d001 * idp.x + d101 * dp.x;
-    float d10 = d010 * idp.x + d110 * dp.x;
-    float d11 = d011 * idp.x + d111 * dp.x;
-
-    float d0 = d00 * idp.y + d10 * dp.y;
-    float d1 = d01 * idp.y + d11 * dp.y;
-
-    return d0 * idp.z + d1 * dp.z;
-}
-
 bool in_bounds(vec3 point){
     return (0 <= point.x && point.x <= width) && (0 <= point.y && point.y <= height) && (0 <= point.z && point.z <= depth);
 }
@@ -163,7 +137,6 @@ void main() {
 
     vec3 dda_start;
     if (in_bounds(start_pos)){
-        // colour_fs = vec4(mod(start_pos, cell_size),  1.0);
         dda_start = start_pos;
     }
     else if (isinf(x_intersect) && isinf(y_intersect) && isinf(z_intersect)){
@@ -171,15 +144,12 @@ void main() {
         return;
     }
     else if (in_bounds(x_point)){
-        // colour_fs = vec4(mod(x_point, cell_size.x), 1.0);
         dda_start = x_point;
     }
     else if (in_bounds(y_point)){
-        // colour_fs = vec4(mod(y_point, cell_size.y), 1.0);
         dda_start = y_point;
     }
     else if (in_bounds(z_point)){
-        // colour_fs = vec4(mod(z_point, cell_size.z), 1.0);
         dda_start = z_point;
     }
     else{
@@ -187,6 +157,5 @@ void main() {
         return;
     }
 
-    // colour_fs = vec4(mod(dda_start, cell_size), 1.0);
     colour_fs = dda(dda_start, direction);
 }
