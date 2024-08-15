@@ -1,5 +1,5 @@
 """
-File Loading for complex data for Prospa.
+File Loading of complex data from Prospa files.
 
 works on .1d, .2d, .3d files
 also requires a .par file
@@ -10,7 +10,7 @@ Loading Path:
 
 Pick .<x>d file
 Choose .par file
-if <no .par>
+if no <.par>
     Get Voxel Size
     Get Orientation
 end
@@ -75,23 +75,23 @@ class ProspaParametersLoader(FileLoader[ProspaParameters]):
         ('Prospa Parameters', '*.par')
     ]
 
-    def load(self) -> ProspaParamters:
+    def load(self) -> ProspaParameters:
         with open(self.path, 'r') as par_file:
             lines = par_file.readlines()
             args = {line.split(" = ")[0]: line.split("=")[1].strip().strip("\"") for line in lines}
             
-    default_cell_size = int(args['FOVr']) / int(args['Nread'])
+        default_cell_size = int(args['FOVr']) / int(args['Nread'])
 
-    phase_1_fov = int(args['FOVp1']) if int(args['FOVp1']) else int(args['Nphase1']) * default_cell_size
-    phase_2_fov = int(args['FOVp2']) if int(args['FOVp2']) else int(args['Nphase2']) * default_cell_size
+        phase_1_fov = int(args['FOVp1']) if int(args['FOVp1']) else int(args['Nphase1']) * default_cell_size
+        phase_2_fov = int(args['FOVp2']) if int(args['FOVp2']) else int(args['Nphase2']) * default_cell_size
 
-    self._data = ProspaParameters(
-        args['orient'],
-        phase_2_fov,
-        phase_1_fov,
-        int(args['FOVr']),
-        int(args['Nphase2']),
-        int(args['Nphase1']),
-        int(args['Nread']),
-    )
-    return self._data
+        self._data = ProspaParameters(
+            args['orient'],
+            phase_2_fov,
+            phase_1_fov,
+            int(args['FOVr']),
+            int(args['Nphase2']),
+            int(args['Nphase1']),
+            int(args['Nread']),
+        )
+        return self._data

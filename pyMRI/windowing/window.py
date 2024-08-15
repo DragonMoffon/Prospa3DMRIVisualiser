@@ -10,12 +10,12 @@ from pyMRI.rendering.camera import CameraCarousel
 from pyMRI.rendering.voxel import VoxelRenderer
 
 from pyMRI.gui.menu import GuiMenu
-# from pyMRI.gui.colouring import ColouringTab
+from pyMRI.gui.colouring import ColouringTab
 # from pyMRI.gui.processing import ProcessingTab
 
 from pyMRI.gui.warning import GuiWarning, WarningMode
 
-from arcade import Window, key, Text
+from arcade import Window, key, Text, get_screens
 
 SPRITE_SIZE = 8
 
@@ -23,9 +23,13 @@ SPRITE_SIZE = 8
 class MRIWindow(Window):
 
     def __init__(self, launch_config: LaunchConfig):
-        super().__init__(launch_config.screen_width, launch_config.screen_height, launch_config.window_name)
+        w, h = launch_config.screen_width, launch_config.screen_height
+        if launch_config.fullscreen:
+            scr = get_screens()[0]
+            w, h = scr.width, scr.height
+        super().__init__(w, h, launch_config.window_name, fullscreen=launch_config.fullscreen)
+        self.center_window()
         imgui.create_context()
-        imgui.get_io().display_size = self.width // 4, self.height // 4
         imgui.get_io().fonts.get_tex_data_as_rgba32()
 
         self._switch_text = Text("Press ` or ~ to toggle menu", 10, 10, font_size=12)
@@ -38,7 +42,7 @@ class MRIWindow(Window):
 
         self._mri: MRI = MRI(launch_config, self._voxel_renderer)
 
-        self._menu: GuiMenu = GuiMenu(())
+        self._menu: GuiMenu = GuiMenu((ColouringTab(self._voxel_renderer),))
 
         self._warning_dialogs: list[GuiWarning] = []
 

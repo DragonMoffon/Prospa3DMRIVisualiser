@@ -28,26 +28,14 @@ class MRI:
         self._mri_config: MRIConfig = None
 
         self._raw_read_data: np.ndarray = None
-
-        """
-        self._scan_images = load_scan(mri_config, scan_config)  
-        self._scan_data = np.fft.ifftshift(self._scan_images, [-2])
-        # for idx in range(0, scan_config.phase_2_count):
-        #    img = self._scan_images[idx]
-        #    # self._scan_data[idx] = img
-        #    self._scan_data[idx] = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(img, axes=[-2, -1]), norm='ortho'), axes=[-2, -1])
-        #    # self._scan_data[idx] = np.fft.ifft2(img, norm='ortho')
-        """
+    
 
     def initialise(self):
-        if self._launch_config.path is None:
-            self.win.push_warning(
-                GuiWarning("No Selected File", "pyMRI was launched without an input file path", WarningMode.INFO,
-                           continue_override="Select", cancel_override="Quit",
-                           continue_callback=self.load_data_dialog, cancel_callback=self.win.close)
-            )
-        else:
-            self.load_data()
+        self.win.push_warning(
+            GuiWarning("No File Loaded", "Please Select a File", WarningMode.INFO,
+                    continue_override="Select", cancel_override="Quit",
+                    continue_callback=self.load_data_dialog, cancel_callback=self.win.close)
+        )
 
     @property
     def mri_config(self):
@@ -84,7 +72,7 @@ class MRI:
             _get_par()
 
     def load_data(self, data_file: str = None, acqu_file: str = None):
-        if not (data_file and acqu_file) and not self._launch_config.path:
+        if not (data_file and acqu_file):
             self.win.push_warning(
                 GuiWarning(
                     "Invalid Data loading",
@@ -97,56 +85,6 @@ class MRI:
                 )
             )
             return
-        elif (data_file and acqu_file) and self._launch_config.path:
-            self.win.push_warning(
-                GuiWarning(
-                    "Invalid Data loading",
-                    "pyMRI was given to many file options to know how to load data.",
-                    WarningMode.ERROR,
-                    continue_override="Try Again",
-                    cancel_override="Quit",
-                    continue_callback=self.load_data(),
-                    cancel_callback=self.win.close
-                )
-            )
-            return
-
-        if not data_file:
-            if exists(self._launch_config.path + (self._launch_config.data_name or "data.3d")):
-                data_file = self._launch_config.path + (self._launch_config.data_name or "data.3d")
-            elif exists(self._launch_config.path + (self._launch_config.data_name or "data.2d")):
-                data_file = self._launch_config.path + (self._launch_config.data_name or "data.2d")
-            elif exists(self._launch_config.path + (self._launch_config.data_name or "data.1d")):
-                data_file = self._launch_config.path + (self._launch_config.data_name or "data.1d")
-            else:
-                self.win.push_warning(
-                    GuiWarning(
-                        "Invalid Data loading",
-                        "pyMRI tried to load data, but was given invalid files.",
-                        WarningMode.ERROR,
-                        continue_override="Try Again",
-                        cancel_override="Quit",
-                        continue_callback=self.load_data_dialog,
-                        cancel_callback=self.win.close
-                    )
-                )
-                return
-
-        if not acqu_file:
-            acqu_file = self._launch_config.path + (self._launch_config.data_name or "acqu.par")
-            if not exists(acqu_file):
-                self.win.push_warning(
-                    GuiWarning(
-                        "Invalid Data loading",
-                        "pyMRI tried to load data, but was given invalid files.",
-                        WarningMode.ERROR,
-                        continue_override="Try Again",
-                        cancel_override="Quit",
-                        continue_callback=self.load_data_dialog,
-                        cancel_callback=self.win.close
-                    )
-                )
-                return
 
         if data_file[-3:] not in {".3d", ".2d", ".1d"}:
             self.win.push_warning(
@@ -180,7 +118,7 @@ class MRI:
 
         self._mri_config = self._original_mri = mri_config
         self._raw_read_data = load_scan(mri_config, data_file)
-
+        
         self._voxel_renderer.update_gpu_data(self._raw_read_data, self._mri_config)
 
     # Processing Operations

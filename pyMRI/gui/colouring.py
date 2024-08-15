@@ -25,7 +25,7 @@ class ColouringTab(GuiTab):
 
     def update(self):
         if self._data_histogram is None:
-            self._data_histogram = self._renderer.get_histogram()
+            self._data_histogram = [[1.0]] #self._renderer.get_histogram()
 
         imgui.push_item_width(-1)
         x, _ = imgui.get_content_region_available()
@@ -33,9 +33,7 @@ class ColouringTab(GuiTab):
             "##histogram",
             array('f', self._data_histogram[0]),
             graph_size=(x, 80)
-
         )
         imgui.pop_item_width()
         _, self._renderer.density_scalar = imgui.slider_float("Density Scalar", self._renderer.density_scalar, 0.001, 1.0)
         _, self._renderer.emission_brightness = imgui.slider_float("Emission Brightness", self._renderer.emission_brightness, 0.001, 1.0)
-
