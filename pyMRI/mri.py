@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 from pyMRI.config import LaunchConfig
 from pyMRI.data_loading import MRIConfig, load_scan, get_scan_config
 
-from pyMRI.gui.warning import GuiWarning, WarningMode
+from pyMRI.gui.gui import GUI
+from pyMRI.gui.popups.popup import GuiPopup, WarningMode
 
 from pyMRI.rendering.voxel import VoxelRenderer
 
@@ -28,13 +29,13 @@ class MRI:
         self._mri_config: MRIConfig = None
 
         self._raw_read_data: np.ndarray = None
-    
 
     def initialise(self):
-        self.win.push_warning(
-            GuiWarning("No File Loaded", "Please Select a File", WarningMode.INFO,
-                    continue_override="Select", cancel_override="Quit",
-                    continue_callback=self.load_data_dialog, cancel_callback=self.win.close)
+        GUI.push_popup(
+            GuiPopup(
+                "No File Loaded", "Please Select a File", WarningMode.INFO,
+                {'Select': self.load_data_dialog, 'Quit': self.win.close}
+            )
         )
 
     @property
@@ -58,14 +59,12 @@ class MRI:
                                                    filetypes=[("Prospa 3D", "*.3d"), ("Prospa 2D", "*.2d"),
                                                               ("Prospa 1D", "*.1d"), ("All Files", "*.*")])
         if files['data'][-3:] not in {".3d", ".2d", ".1d"}:
-            self.win.push_warning(
-                GuiWarning(
+            GUI.push_popup(
+                GuiPopup(
                     "Non-Prospa Data",
                     "The data file chosen is not a prospa file, would you like to continue?",
                     WarningMode.WARNING,
-                    cancel_override="Quit",
-                    continue_callback=_get_par,
-                    cancel_callback=self.win.close
+                    {'Continue': _get_par, 'Quit': self.win.close}
                 )
             )
         else:
@@ -73,43 +72,34 @@ class MRI:
 
     def load_data(self, data_file: str = None, acqu_file: str = None):
         if not (data_file and acqu_file):
-            self.win.push_warning(
-                GuiWarning(
+            GUI.push_popup(
+                GuiPopup(
                     "Invalid Data loading",
                     "pyMRI tried to load data, but was given invalid files.",
                     WarningMode.ERROR,
-                    continue_override="Try Again",
-                    cancel_override="Quit",
-                    continue_callback=self.load_data_dialog,
-                    cancel_callback=self.win.close
+                    {'Try Again': self.load_data_dialog, 'Quit': self.win.close}
                 )
             )
             return
 
         if data_file[-3:] not in {".3d", ".2d", ".1d"}:
-            self.win.push_warning(
-                GuiWarning(
+            GUI.push_popup(
+                GuiPopup(
                     "Invalid Data loading",
                     "pyMRI does not currently support non-Prospa data",
                     WarningMode.ERROR,
-                    continue_override="Try Again",
-                    cancel_override="Quit",
-                    continue_callback=self.load_data_dialog,
-                    cancel_callback=self.win.close
+                    {'Try Again': self.load_data_dialog, 'Quit': self.win.close}
                 )
             )
             return
 
         if acqu_file[-4:] != ".par":
-            self.win.push_warning(
-                GuiWarning(
+            GUI.push_popup(
+                GuiPopup(
                     "Invalid Data loading",
                     "Unrecognised parameter file.",
                     WarningMode.ERROR,
-                    continue_override="Try Again",
-                    cancel_override="Quit",
-                    continue_callback=self.load_data_dialog,
-                    cancel_callback=self.win.close
+                    {'Try Again': self.load_data_dialog, 'Quit': self.win.close}
                 )
             )
             return
@@ -121,6 +111,8 @@ class MRI:
         
         self._voxel_renderer.update_gpu_data(self._raw_read_data, self._mri_config)
 
+        GUI.pop_popup()
+
     # Processing Operations
 
     # Filtering Operations
@@ -128,4 +120,3 @@ class MRI:
     # Visual Operations
 
     # Camera Operations
-

@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from arcade.camera import CameraData, PerspectiveProjector, grips
 from arcade.math import quaternion_rotation
 import arcade.key as key
@@ -5,6 +7,7 @@ import arcade.key as key
 from pyglet.math import Vec2, Vec3
 from arcade import get_window
 
+from pyMRI.gui.gui import GUI
 
 LOOK_SENSITIVITY: float = 60.0
 ROLL_SPEED: float = 60.0
@@ -163,7 +166,6 @@ class CameraCarousel:
 
     def __init__(self):
         self._win = get_window()
-        self.is_disabled: bool = False
 
         self.projector: PerspectiveProjector = PerspectiveProjector()
         self.projector.projection.far = 1000.0
@@ -186,14 +188,9 @@ class CameraCarousel:
             self.on_update
         )
 
-    def enable(self):
-        self.is_disabled = False
-
-    def disable(self):
-        self.is_disabled = True
-
     def switch_to(self, idx):
         if idx == self._current_camera:
+            # TODO: toggle between orientations for this camera
             return
 
         self._cameras[self._current_camera].deselect()
@@ -207,34 +204,42 @@ class CameraCarousel:
         self.switch_to((self._current_camera - 1) % len(self._cameras))
 
     def on_mouse_motion(self, x, y, dx, dy):
-        if self.is_disabled:
+        if GUI.exclusive or GUI.capturing_mouse:
             return
         self._cameras[self._current_camera].look(x, y, dx, dy)
 
     def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
-        if self.is_disabled:
+        if GUI.exclusive or GUI.capturing_mouse:
             return
         self.on_mouse_motion(dx, dy, x, y)
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: int, scroll_y: int):
-        if self.is_disabled:
+        if GUI.exclusive or GUI.capturing_mouse:
             return
         self._cameras[self._current_camera].zoom(scroll_y)
 
     def on_key_press(self, symbol, modifiers):
-        if self.is_disabled:
+        if GUI.exclusive or GUI.capturing_input:
             return
         self._cameras[self._current_camera].press(symbol, modifiers)
 
     def on_key_release(self, symbol, modifiers):
-        if self.is_disabled:
+        if GUI.exclusive or GUI.capturing_input:
             return
         self._cameras[self._current_camera].release(symbol, modifiers)
 
     def on_update(self, delta_time: float):
-        if self.is_disabled:
+        if GUI.exclusive or GUI.capturing_input:
             return
         self._cameras[self._current_camera].update(delta_time)
 
     def use(self):
         self.projector.use()
+
+    @contextmanager
+    def activate(self):
+        try:
+            with self.projector.activate() as cam:
+                yield cam
+        finally:
+            pass

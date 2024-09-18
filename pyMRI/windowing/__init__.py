@@ -1,7 +1,7 @@
 from pyMRI.config import LaunchConfig
-from pyMRI.windowing.window import MRIWindow
+from pyMRI.windowing.window import Window
 
 
 def launch(config: LaunchConfig):
-    win = MRIWindow(config)
+    win = Window(config)
     win.run()

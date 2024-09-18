@@ -1,8 +1,6 @@
 import argparse
 from typing import NamedTuple
 
-from enum import Enum
-
 
 class LaunchConfig(NamedTuple):
     screen_width: int = 1280

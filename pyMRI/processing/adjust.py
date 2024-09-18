@@ -14,9 +14,9 @@ class InterpolateMode(Enum):
 
 
 class OrientStep(Step):
-    
-    def __init__(self, next: Step):
-        super().__init__(next)
+
+    def __init__(self, next_step: Step):
+        super().__init__(next_step)
         self.new_orientation: str = None
 
 

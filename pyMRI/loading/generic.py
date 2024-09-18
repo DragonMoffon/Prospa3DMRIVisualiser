@@ -10,21 +10,25 @@ class FileLoader[T: NamedTuple]:
     dialog_title: str = 'select a file'
     accepted_file_types: list[tuple[str, str]] = [('All Files', '*.*')]
 
-    
     def __init__(self, path: str | Path):
         self.path: str | Path = path
         self._data: T = None
 
     @property
-    def data(self):
+    def data(self) -> T:
+        if self.path is None:
+            raise ValueError('FileLoader has no path set')
         if self._data is None:
-            raise ValueError('FileLoader has not yet loaded it\'s specified file')
+            self._data = self.load()
         return self._data
+
+    @property
+    def is_loaded(self) -> bool:
+        return self._data is not None
 
     @classmethod
     def fetch(cls) -> Self | None:
         path_str = filedialog.askopenfilename(title=cls.dialog_title, filetypes=cls.accepted_file_types)
-        print(path_str)
         if not path_str:
             return
         return cls(Path(path_str))

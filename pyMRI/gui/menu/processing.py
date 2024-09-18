@@ -5,11 +5,6 @@ pre-shift: # x, # y, # z
 post-shift: # x, # y, # z
 fft #
 """
-import imgui
-
-from pyMRI.rendering.voxel import VoxelRenderer
-from pyMRI.gui.tab import GuiTab
-
 
 """class ProcessingTab(GuiTab):
 

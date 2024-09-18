@@ -1,9 +1,9 @@
-from array import array
+import numpy as np
 
-import imgui
+from imgui_bundle import imgui
 
 from pyMRI.rendering.voxel import VoxelRenderer
-from pyMRI.gui.tab import GuiTab
+from pyMRI.gui.menu.tab import GuiTab
 
 
 class ColourTag:
@@ -25,13 +25,13 @@ class ColouringTab(GuiTab):
 
     def update(self):
         if self._data_histogram is None:
-            self._data_histogram = [[1.0]] #self._renderer.get_histogram()
+            self._data_histogram = np.array([1.0], dtype=np.float32) #self._renderer.get_histogram()
 
         imgui.push_item_width(-1)
-        x, _ = imgui.get_content_region_available()
+        x, _ = imgui.get_content_region_avail()
         imgui.plot_histogram(
             "##histogram",
-            array('f', self._data_histogram[0]),
+            self._data_histogram,
             graph_size=(x, 80)
         )
         imgui.pop_item_width()
