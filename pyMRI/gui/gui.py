@@ -5,7 +5,12 @@ from arcade import Window as ArcadeWindow, get_window
 
 from pyMRI.gui.popups.popup import GuiPopup, WarningMode
 from pyMRI.gui.menu.menu import GuiMenu
-from pyMRI.gui.menu.tab import GuiTab
+
+# -- TABS --
+from pyMRI.gui.menu.load import LoadingTab
+from pyMRI.gui.menu.transform import TransformTab
+from pyMRI.gui.menu.adjust import AdjustmentTab
+from pyMRI.gui.menu.style import VisualiseTab
 
 
 class Gui:
@@ -22,7 +27,9 @@ class Gui:
         imgui.get_io().fonts.get_tex_data_as_rgba32()
         self._win = get_window()
         self._renderer = PygletProgrammablePipelineRenderer(self._win)
-        self._menu = GuiMenu(())
+        self._menu = GuiMenu(
+            (LoadingTab(), TransformTab(), AdjustmentTab(), VisualiseTab())
+        )
 
     def update(self):
         self._renderer.process_inputs()
@@ -71,5 +78,6 @@ class Gui:
     @property
     def capturing_mouse(self) -> bool:
         return imgui.get_io().want_capture_mouse
+
 
 GUI = Gui()

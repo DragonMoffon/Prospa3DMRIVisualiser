@@ -11,6 +11,10 @@ class Step[I: NamedTuple | None, O: NamedTuple]:
         self._output: O = None
 
     @property
+    def has_processed(self) -> bool:
+        return self._output is not None
+
+    @property
     def data(self) -> O:
         if self._output is None:
             raise ValueError("Step {self} has not yet been processed")
@@ -23,7 +27,8 @@ class Step[I: NamedTuple | None, O: NamedTuple]:
             return
         self._input = _input
         self._output = _output
-        self._next.update(_output)
+        if self._next is not None:
+            self._next.update(_output)
 
     def _recalculate(self, previous: I) -> O | None:
         raise NotImplementedError
@@ -37,6 +42,6 @@ class Step[I: NamedTuple | None, O: NamedTuple]:
 
     def __setattr__(self, name: str, value: Any):
         object.__setattr__(self, name, value)
-        if name.startswith('_') or not self._ready:
+        if not self._ready or name.startswith("_"):
             return
         self.update(self._input)

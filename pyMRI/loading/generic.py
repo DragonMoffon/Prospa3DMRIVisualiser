@@ -1,14 +1,12 @@
-# TODO: File Loader
-# Data Processing
-
 from typing import Self, NamedTuple
 from pathlib import Path
 
 from tkinter import filedialog
 
+
 class FileLoader[T: NamedTuple]:
-    dialog_title: str = 'select a file'
-    accepted_file_types: list[tuple[str, str]] = [('All Files', '*.*')]
+    dialog_title: str = "select a file"
+    accepted_file_types: list[tuple[str, str]] = [("All Files", "*.*")]
 
     def __init__(self, path: str | Path):
         self.path: str | Path = path
@@ -17,7 +15,7 @@ class FileLoader[T: NamedTuple]:
     @property
     def data(self) -> T:
         if self.path is None:
-            raise ValueError('FileLoader has no path set')
+            raise ValueError("FileLoader has no path set")
         if self._data is None:
             self._data = self.load()
         return self._data
@@ -28,7 +26,9 @@ class FileLoader[T: NamedTuple]:
 
     @classmethod
     def fetch(cls) -> Self | None:
-        path_str = filedialog.askopenfilename(title=cls.dialog_title, filetypes=cls.accepted_file_types)
+        path_str = filedialog.askopenfilename(
+            title=cls.dialog_title, filetypes=cls.accepted_file_types
+        )
         if not path_str:
             return
         return cls(Path(path_str))
@@ -36,5 +36,5 @@ class FileLoader[T: NamedTuple]:
     def load(self) -> T:
         raise NotImplementedError
 
-        
+
 Files = dict[str, FileLoader]

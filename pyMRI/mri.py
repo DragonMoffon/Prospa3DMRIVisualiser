@@ -31,10 +31,13 @@ class MRI:
         self._raw_read_data: np.ndarray = None
 
     def initialise(self):
+        return
         GUI.push_popup(
             GuiPopup(
-                "No File Loaded", "Please Select a File", WarningMode.INFO,
-                {'Select': self.load_data_dialog, 'Quit': self.win.close}
+                "No File Loaded",
+                "Please Select a File",
+                WarningMode.INFO,
+                {"Select": self.load_data_dialog, "Quit": self.win.close},
             )
         )
 
@@ -47,24 +50,31 @@ class MRI:
         files: dict[str, str] = {"data": None, "acqu": None}
 
         def _load_data():
-            self.load_data(files['data'], files['acqu'])
+            self.load_data(files["data"], files["acqu"])
 
         def _get_par():
-            files['acqu'] = filedialog.askopenfilename(title="Select a parameter file",
-                                                       filetypes=[("Prospa Parameter file", "*.par"),
-                                                                  ("All Files", "*.*")])
+            files["acqu"] = filedialog.askopenfilename(
+                title="Select a parameter file",
+                filetypes=[("Prospa Parameter file", "*.par"), ("All Files", "*.*")],
+            )
             _load_data()
 
-        files['data'] = filedialog.askopenfilename(title="Select a data file",
-                                                   filetypes=[("Prospa 3D", "*.3d"), ("Prospa 2D", "*.2d"),
-                                                              ("Prospa 1D", "*.1d"), ("All Files", "*.*")])
-        if files['data'][-3:] not in {".3d", ".2d", ".1d"}:
+        files["data"] = filedialog.askopenfilename(
+            title="Select a data file",
+            filetypes=[
+                ("Prospa 3D", "*.3d"),
+                ("Prospa 2D", "*.2d"),
+                ("Prospa 1D", "*.1d"),
+                ("All Files", "*.*"),
+            ],
+        )
+        if files["data"][-3:] not in {".3d", ".2d", ".1d"}:
             GUI.push_popup(
                 GuiPopup(
                     "Non-Prospa Data",
                     "The data file chosen is not a prospa file, would you like to continue?",
                     WarningMode.WARNING,
-                    {'Continue': _get_par, 'Quit': self.win.close}
+                    {"Continue": _get_par, "Quit": self.win.close},
                 )
             )
         else:
@@ -77,7 +87,7 @@ class MRI:
                     "Invalid Data loading",
                     "pyMRI tried to load data, but was given invalid files.",
                     WarningMode.ERROR,
-                    {'Try Again': self.load_data_dialog, 'Quit': self.win.close}
+                    {"Try Again": self.load_data_dialog, "Quit": self.win.close},
                 )
             )
             return
@@ -88,7 +98,7 @@ class MRI:
                     "Invalid Data loading",
                     "pyMRI does not currently support non-Prospa data",
                     WarningMode.ERROR,
-                    {'Try Again': self.load_data_dialog, 'Quit': self.win.close}
+                    {"Try Again": self.load_data_dialog, "Quit": self.win.close},
                 )
             )
             return
@@ -99,7 +109,7 @@ class MRI:
                     "Invalid Data loading",
                     "Unrecognised parameter file.",
                     WarningMode.ERROR,
-                    {'Try Again': self.load_data_dialog, 'Quit': self.win.close}
+                    {"Try Again": self.load_data_dialog, "Quit": self.win.close},
                 )
             )
             return
@@ -108,7 +118,7 @@ class MRI:
 
         self._mri_config = self._original_mri = mri_config
         self._raw_read_data = load_scan(mri_config, data_file)
-        
+
         self._voxel_renderer.update_gpu_data(self._raw_read_data, self._mri_config)
 
         GUI.pop_popup()

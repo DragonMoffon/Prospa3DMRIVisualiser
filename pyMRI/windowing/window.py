@@ -5,7 +5,7 @@ from pyMRI.config import LaunchConfig
 from pyMRI.mri import MRI
 
 from pyMRI.rendering.camera import CameraCarousel
-from pyMRI.rendering.voxel import VoxelRenderer
+from pyMRI.rendering.voxel import VoxelRendererOld as VoxelRenderer
 
 from pyMRI.gui.gui import GUI
 
@@ -21,7 +21,9 @@ class Window(ArcadeWindow):
         if launch_config.fullscreen:
             scr = get_screens()[0]
             w, h = scr.width, scr.height
-        super().__init__(w, h, launch_config.window_name, fullscreen=launch_config.fullscreen)
+        super().__init__(
+            w, h, launch_config.window_name, fullscreen=launch_config.fullscreen
+        )
         GUI.initialise()
         self.center_window()
 
@@ -29,11 +31,11 @@ class Window(ArcadeWindow):
 
         self._carousel: CameraCarousel = CameraCarousel()
 
-        self._voxel_renderer: VoxelRenderer = VoxelRenderer(self._carousel.projector)
+        # self._voxel_renderer: VoxelRenderer = VoxelRenderer(self._carousel.projector)
 
-        self._mri: MRI = MRI(launch_config, self._voxel_renderer)
+        # self._mri: MRI = MRI(launch_config, self._voxel_renderer)
 
-        self._mri.initialise()
+        # self._mri.initialise()
 
     def on_key_press(self, symbol: int, modifiers: int):
         if GUI.exclusive or GUI.capturing_input:
@@ -52,7 +54,8 @@ class Window(ArcadeWindow):
         self.clear()
 
         with self._carousel.activate():
-            self._voxel_renderer.draw()
+            pass
+            # self._voxel_renderer.draw()
 
         with self.default_camera.activate():
             GUI.draw()
