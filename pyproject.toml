@@ -7,9 +7,9 @@ readme="README.md"
 version="2024.05.21.1"
 dependencies=[
     "arcade>=3.0.0.dev27",
-    "numpy>=1.26",#
+    "numpy>=1.26",
     "scipy",
-    "imgui[pyglet]"
+    "imgui-bundle"
 ]
 requires-python= ">= 3.12"
 authors =  [
