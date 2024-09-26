@@ -41,11 +41,11 @@ class CarouselCamera:
 class FixedCamera(CarouselCamera):
 
     def __init__(
-            self,
-            camera_data: CameraData,
-            pos: tuple[float, float, float],
-            forward: tuple[float, float, float],
-            up: tuple[float, float, float]
+        self,
+        camera_data: CameraData,
+        pos: tuple[float, float, float],
+        forward: tuple[float, float, float],
+        up: tuple[float, float, float],
     ):
         self._data: CameraData = camera_data
         self._pos: tuple[float, float, float] = pos
@@ -135,11 +135,16 @@ class FlyAroundCamera(CarouselCamera):
         camera = self._camera_data
 
         if self._pitch_velocity or self._yaw_velocity:
-            self._pitch = min(max(self._pitch + LOOK_SENSITIVITY * dt * self._pitch_velocity, -89.0), 89.0)
+            self._pitch = min(
+                max(self._pitch + LOOK_SENSITIVITY * dt * self._pitch_velocity, -89.0),
+                89.0,
+            )
             self._yaw = (self._yaw + LOOK_SENSITIVITY * dt * self._yaw_velocity) % 360
 
             camera.up = self._global_up
-            camera.forward = quaternion_rotation(self._global_up, (0.0, 0.0, -1.0), self._yaw)
+            camera.forward = quaternion_rotation(
+                self._global_up, (0.0, 0.0, -1.0), self._yaw
+            )
             camera.up, camera.forward = grips.rotate_around_right(camera, self._pitch)
 
             self._pitch_velocity = 0.0
@@ -149,10 +154,18 @@ class FlyAroundCamera(CarouselCamera):
             o_pos = camera.position
             fw = camera.forward
             fw_speed = MOVE_SPEED * self._accelerate_forward * dt
-            camera.position = o_pos[0] + fw_speed * fw[0], o_pos[1] + fw_speed * fw[1], o_pos[2] + fw_speed * fw[2]
+            camera.position = (
+                o_pos[0] + fw_speed * fw[0],
+                o_pos[1] + fw_speed * fw[1],
+                o_pos[2] + fw_speed * fw[2],
+            )
 
         if self._strafe_vertical or self._strafe_horizontal:
-            strafe = Vec2(self._strafe_horizontal, self._strafe_vertical).normalize() * MOVE_SPEED * dt
+            strafe = (
+                Vec2(self._strafe_horizontal, self._strafe_vertical).normalize()
+                * MOVE_SPEED
+                * dt
+            )
             camera.position = grips.strafe(camera, strafe)
 
     def select(self):
@@ -169,7 +182,7 @@ class CameraCarousel:
 
         self.projector: PerspectiveProjector = PerspectiveProjector()
         self.projector.projection.far = 1000.0
-        self.projector.view.position = (0.0, 0.0, -40.0)
+        self.projector.view.position = (0.0, 0.0, 40.0)
 
         # Camera 1: Fly Around
         # Camera 2: Gimble
@@ -185,7 +198,7 @@ class CameraCarousel:
             self.on_mouse_scroll,
             self.on_key_press,
             self.on_key_release,
-            self.on_update
+            self.on_update,
         )
 
     def switch_to(self, idx):

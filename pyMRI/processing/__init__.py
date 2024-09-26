@@ -2,9 +2,14 @@ from pyMRI.processing.data import (
     FileData,
     FourierData,
     RenderData,
-    ORIENTATIONS,
     Orientation,
+    ORIENTATIONS,
+    ORIENTATION_MAP,
     Unit,
+    UNIT_CONVERSIONS,
+    InterpolateModes,
+    FourierMode,
+    FourierNorm,
 )
 
 from pyMRI.processing.loading import FileLoaderStep
@@ -15,13 +20,19 @@ from pyMRI.processing.style import ColourStep, CameraStep
 __all__ = (
     "Orientation",
     "ORIENTATIONS",
+    "ORIENTATION_MAP",
     "Unit",
+    "UNIT_CONVERSIONS",
     "FileData",
     "FILE_LOADER_STEP",
     "FourierData",
-    "SHIFT_STEP",
+    "PRE_SHIFT_STEP",
     "FILTER_STEP",
+    "FourierMode",
+    "FourierNorm",
     "FOURIER_STEP",
+    "POST_SHIFT_STEP",
+    "InterpolateModes",
     "CONVERT_STEP",
     "REORIENT_STEP",
     "INTERPOLATE_STEP",
@@ -53,7 +64,8 @@ COLOUR_STEP = ColourStep(CAMERA_STEP)
 INTERPOLATE_STEP = InterpolateStep(COLOUR_STEP)
 REORIENT_STEP = ReorientStep(INTERPOLATE_STEP)
 CONVERT_STEP = ConvertStep(REORIENT_STEP)
-FOURIER_STEP = FourierStep(CONVERT_STEP)
+POST_SHIFT_STEP = ShiftStep(CONVERT_STEP)
+FOURIER_STEP = FourierStep(POST_SHIFT_STEP)
 FILTER_STEP = FilterStep(FOURIER_STEP)
-SHIFT_STEP = ShiftStep(FILTER_STEP)
-FILE_LOADER_STEP = FileLoaderStep(SHIFT_STEP)
+PRE_SHIFT_STEP = ShiftStep(FILTER_STEP)
+FILE_LOADER_STEP = FileLoaderStep(PRE_SHIFT_STEP)

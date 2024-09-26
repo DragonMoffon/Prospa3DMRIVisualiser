@@ -1,10 +1,32 @@
 from __future__ import annotations
 from typing import NamedTuple, Literal
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 
-from numpy import ndarray, complexfloating, reshape
+from numpy import ndarray, complexfloating
 
 from arcade.gl import Texture2D
+
+
+class FourierMode(Enum):
+    ONE = auto()
+    TWO = auto()
+    THREE = auto()
+
+    @staticmethod
+    def to_str(mode: FourierMode):
+        match mode:
+            case FourierMode.ONE:
+                return "1D"
+            case FourierMode.TWO:
+                return "2D"
+            case FourierMode.THREE:
+                return "3D"
+
+
+class FourierNorm(StrEnum):
+    BACKWARD = "backward"
+    ORTHOGRAPHIC = "ortho"
+    FORWARD = "forward"
 
 
 class Unit(Enum):
@@ -48,7 +70,7 @@ class Unit(Enum):
 
 
 # TODO Imperial Units and lightyears
-UNIT_CONVERSIONS = {
+UNIT_CONVERSIONS: dict[tuple[Unit, Unit], float] = {
     (Unit.MM, Unit.CM): 1e-1,
     (Unit.MM, Unit.ME): 1e-3,
     (Unit.MM, Unit.KM): 1e-6,
@@ -117,41 +139,24 @@ UNIT_CONVERSIONS = {
 
 
 class InterpolateModes(Enum):
-    none = auto()  # Do no interpolation
-    cube = auto()  # Make all voxels uniform in size
-    double = auto()  # double voxel resolution
-    triple = auto()  # triple voxel resolution
-    quadruple = auto()  # quadruple voxel resolution
-    minimum = auto()  # make the voxels as fine as possible
+    NONE = auto()  # Do no interpolation
+    CUBE = auto()  # Make all voxels uniform in size
+    DOUBLE = auto()  # double voxel resolution
+    TRIPLE = auto()  # triple voxel resolution
+    QUADRUPLE = auto()  # quadruple voxel resolution
+    MINIMUM = auto()  # make the voxels as fine as possible
 
 
-ORIENTATIONS = (
-    "x",
-    "y",
-    "z",
-    "xy",
-    "yx",
-    "yz",
-    "zy",
-    "xz",
-    "zx",
-    "xyz",
-    "xzy",
-    "yxz",
-    "yzx",
-    "zxy",
-    "zyx",
-)
 type Orientation = Literal[
-    "x",
-    "y",
-    "z",
-    "xy",
-    "yx",
-    "yz",
-    "zy",
-    "xz",
-    "zx",
+    "x",  # implicit yz-x
+    "y",  # implicit xz-y
+    "z",  # implicit xy-z
+    "xy",  # implicit z-xy
+    "xz",  # implicit y-xz
+    "yx",  # implicit z-yx
+    "yz",  # implicit x-yz
+    "zy",  # implicit y-zx
+    "zx",  # implicit x-zy
     "xyz",
     "xzy",
     "yxz",
@@ -159,6 +164,40 @@ type Orientation = Literal[
     "zxy",
     "zyx",
 ]
+ORIENTATIONS: tuple[Orientation, ...] = (
+    "x",  # implicit yz-x
+    "y",  # implicit xz-y
+    "z",  # implicit xy-z
+    "xy",  # implicit z-xy
+    "xz",  # implicit y-xz
+    "yx",  # implicit z-yx
+    "yz",  # implicit x-yz
+    "zx",  # implicit y-zx
+    "zy",  # implicit x-zy
+    "xyz",
+    "xzy",
+    "yxz",
+    "yzx",
+    "zxy",
+    "zyx",
+)
+ORIENTATION_MAP: dict[Orientation, tuple[int, int, int]] = {
+    "x": (2, 0, 1),
+    "y": (0, 2, 1),
+    "z": (0, 1, 2),
+    "xy": (1, 2, 0),
+    "xz": (1, 0, 2),
+    "yx": (1, 0, 2),
+    "yz": (0, 1, 2),
+    "zx": (2, 0, 1),
+    "zy": (0, 2, 1),
+    "xyz": (0, 1, 2),
+    "xzy": (0, 2, 1),
+    "yxz": (1, 0, 2),
+    "yzx": (2, 0, 1),
+    "zxy": (1, 2, 0),
+    "zyx": (2, 1, 0),
+}
 
 
 class FileData(NamedTuple):
@@ -169,7 +208,7 @@ class FileData(NamedTuple):
     voxel_data: ndarray[complexfloating]
 
 
-type FourierData = FileData
+FourierData = FileData
 
 
 class RenderData(NamedTuple):

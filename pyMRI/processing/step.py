@@ -1,14 +1,26 @@
 from __future__ import annotations
+from contextlib import contextmanager
 from typing import NamedTuple, Self, Any
 
 
 class Step[I: NamedTuple | None, O: NamedTuple]:
 
     def __init__(self, next_step: Step):
-        self._ready: bool = False
+        self._ready: bool = True
         self._next: Step = next_step
         self._input: I = None
         self._output: O = None
+
+    def _safe_set(self, attr: str, value: Any) -> None:
+        object.__setattr__(self, attr, value)
+
+    @contextmanager
+    def unready(self):
+        try:
+            self._ready = False
+            yield self
+        finally:
+            self._ready = True
 
     @property
     def has_processed(self) -> bool:

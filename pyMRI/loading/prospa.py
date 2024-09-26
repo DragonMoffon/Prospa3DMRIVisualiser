@@ -2,25 +2,30 @@
 File Loading of complex data from Prospa files.
 
 works on .1d, .2d, .3d files
-also requires a .par file
+can also use acqu.par files for more data
 
-Can work without the parameter file but is a lossy option
+The prospa format:
+little endian
+Header:
+    -> Source (little endian chars) {v1.1 Data Pros}
+    -> unknown (32-bit int)
+    -> Read Count (32-bit int) {'img width'}
+    -> Phase 1 Count (32-bit int) {'img height'}
+    -> Phase 2 Count (32-bit int) {'img count'}
 
-Loading Path:
+From the parameter file.
+the orientation defines how the axis where used
+the last axis is the read count
+the second to last axis is the phase 1 count
+the first axis is the phase 2 count
 
-Pick .<x>d file
-Choose .par file
-if no <.par>
-    Get Voxel Size
-    Get Orientation
-end
-generate data
+this means that for 'XYZ', X is the phase 2, Y is the phase 1, and Z is the read axis.
 """
 
 from typing import NamedTuple
 from struct import unpack
 
-from numpy import ndarray, complexfloating, zeros, shape
+from numpy import ndarray, complexfloating, zeros
 
 from pyMRI.loading.generic import FileLoader
 
@@ -51,15 +56,15 @@ class ProspaDataLoader(FileLoader[ProspaData]):
             )
             image_chunk_size = _COMPLEX_SIZE * img_width * img_height
             image_chunk_format = "<" + "f" * (2 * img_width * img_height)
-            images = zeros([img_count, img_width, img_height], dtype=complexfloating)
+            images = zeros([img_count, img_height, img_width], dtype=complexfloating)
 
             for img in images[:]:
                 data = unpack(image_chunk_format, data_file.read(image_chunk_size))
                 for idx in range(img_width * img_height):
                     value = data[2 * idx] + 1j * data[2 * idx + 1]
-                    img[idx % img_width, idx // img_width] = value
+                    img[idx % img_height, idx // img_height] = value
 
-            self._data = ProspaData((img_count, img_width, img_height), images)
+            self._data = ProspaData((img_count, img_height, img_width), images)
             return self._data
 
 
@@ -67,10 +72,10 @@ class ProspaParameters(NamedTuple):
     orient: str
     phase_2: int
     phase_1: int
-    read: int
+    read: int  # Last orientation element
     img_count: int
-    img_width: int
     img_height: int
+    img_width: int  # Last orientation element
     # TODO fill with other prospa parameters
 
 
@@ -82,28 +87,28 @@ class ProspaParametersLoader(FileLoader[ProspaParameters]):
         with open(self.path, "r") as par_file:
             lines = par_file.readlines()
             args = {
-                line.split(" = ")[0]: line.split("=")[1].strip().strip('"')
+                line.split("=")[0].strip(): line.split("=")[1].strip().strip('"')
                 for line in lines
             }
 
-        default_cell_size = int(args["FOVr"]) / int(args["Nread"])
+        default_cell_size = float(args["FOVr"]) / float(args["Nread"])
 
         phase_1_fov = (
-            int(args["FOVp1"])
-            if int(args["FOVp1"])
-            else int(args["Nphase1"]) * default_cell_size
+            float(args["FOVp1"])
+            if float(args["FOVp1"])
+            else float(args["Nphase1"]) * default_cell_size
         )
         phase_2_fov = (
-            int(args["FOVp2"])
-            if int(args["FOVp2"])
-            else int(args["Nphase2"]) * default_cell_size
+            float(args["FOVp2"])
+            if float(args["FOVp2"])
+            else float(args["Nphase2"]) * default_cell_size
         )
 
         self._data = ProspaParameters(
             args["orient"].lower(),
             phase_2_fov,
             phase_1_fov,
-            int(args["FOVr"]),
+            float(args["FOVr"]),
             int(args["Nphase2"]),
             int(args["Nphase1"]),
             int(args["Nread"]),

@@ -25,9 +25,11 @@ class FileLoader[T: NamedTuple]:
         return self._data is not None
 
     @classmethod
-    def fetch(cls) -> Self | None:
+    def fetch(cls, start_folder: Path = None) -> Self | None:
         path_str = filedialog.askopenfilename(
-            title=cls.dialog_title, filetypes=cls.accepted_file_types
+            title=cls.dialog_title,
+            filetypes=cls.accepted_file_types,
+            initialdir=start_folder,
         )
         if not path_str:
             return

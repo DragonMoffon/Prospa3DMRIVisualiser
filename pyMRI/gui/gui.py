@@ -27,9 +27,16 @@ class Gui:
         imgui.get_io().fonts.get_tex_data_as_rgba32()
         self._win = get_window()
         self._renderer = PygletProgrammablePipelineRenderer(self._win)
+        # fmt: off
         self._menu = GuiMenu(
-            (LoadingTab(), TransformTab(), AdjustmentTab(), VisualiseTab())
+            (
+                LoadingTab(),
+                TransformTab(), 
+                AdjustmentTab(),
+                VisualiseTab()
+            )
         )
+        # fmt: on
 
     def update(self):
         self._renderer.process_inputs()

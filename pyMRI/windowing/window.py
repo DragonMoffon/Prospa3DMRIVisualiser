@@ -1,11 +1,7 @@
-from imgui_bundle import imgui
-from pyMRI._distutil_workaround import PygletProgrammablePipelineRenderer
-
 from pyMRI.config import LaunchConfig
-from pyMRI.mri import MRI
 
 from pyMRI.rendering.camera import CameraCarousel
-from pyMRI.rendering.voxel import VoxelRendererOld as VoxelRenderer
+from pyMRI.rendering.voxel import VoxelRenderer
 
 from pyMRI.gui.gui import GUI
 
@@ -31,7 +27,7 @@ class Window(ArcadeWindow):
 
         self._carousel: CameraCarousel = CameraCarousel()
 
-        # self._voxel_renderer: VoxelRenderer = VoxelRenderer(self._carousel.projector)
+        self._voxel_renderer: VoxelRenderer = VoxelRenderer()
 
         # self._mri: MRI = MRI(launch_config, self._voxel_renderer)
 
@@ -54,8 +50,7 @@ class Window(ArcadeWindow):
         self.clear()
 
         with self._carousel.activate():
-            pass
-            # self._voxel_renderer.draw()
+            self._voxel_renderer.draw()
 
         with self.default_camera.activate():
             GUI.draw()

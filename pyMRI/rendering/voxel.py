@@ -1,7 +1,7 @@
 from array import array
 from struct import pack
 from enum import Enum
-from math import radians, tan
+from math import radians, tan, atan
 
 from importlib.resources import read_text, path
 import pyMRI.rendering.shaders as shaders
@@ -12,9 +12,7 @@ from arcade import get_window
 from arcade.camera import PerspectiveProjector
 import arcade.gl as gl
 
-from pyMRI.data_loading import MRIConfig
-
-from pyMRI.processing import COLOUR_STEP
+from pyMRI.processing import COLOUR_STEP, RenderData, ORIENTATION_MAP
 
 
 class Mode(Enum):
@@ -23,7 +21,7 @@ class Mode(Enum):
     IMAG = 2
 
 
-_BUFFER_HEADER_SIZE = 6 * 4  # 6 floats / ints
+_BUFFER_HEADER_SIZE = 6 * 0b0100  # 6 floats / ints
 
 
 class VoxelRendererOld:
@@ -70,10 +68,6 @@ class VoxelRendererOld:
 
         linear_data = np.reshape(linear_data, -1)
         linear_data = linear_data / np.max(linear_data)
-
-        print(
-            data_config.read_count, data_config.phase_1_count, data_config.phase_2_count
-        )
 
         _buffer_size = _BUFFER_HEADER_SIZE + len(linear_data) * 4
         if self._point_buffer is None:
@@ -157,3 +151,60 @@ class VoxelRenderer:
             ],
             mode=ctx.TRIANGLE_STRIP,
         )
+        self.render_data: RenderData = None
+
+    def validate_data(self):
+        if not COLOUR_STEP.has_processed or COLOUR_STEP.data is self.render_data:
+            return
+
+        self.render_data = data = COLOUR_STEP.data
+        self._dda_shader["density_scalar"] = data.density_scalar
+        self._dda_shader["emission_brightness"] = data.emission_brightness
+
+        orientation_shape = ORIENTATION_MAP[self.render_data.orientation]
+
+        x_size, y_size, z_size = tuple(
+            zip(*sorted(zip(orientation_shape, data.voxel_dimensions)))
+        )[-1]
+        x_count, y_count, z_count = tuple(
+            zip(*sorted(zip(orientation_shape, data.voxel_counts)))
+        )[-1]
+
+        transposed = np.transpose(self.render_data.voxel_data, orientation_shape)
+        magnitude = np.abs(transposed)
+        linear_data = np.reshape(magnitude, -1)
+        linear_data = linear_data / np.max(linear_data)
+
+        data_count = len(linear_data)
+
+        _buffer_size = _BUFFER_HEADER_SIZE + data_count * 0b0100
+        if self._point_buffer is None:
+            self._point_buffer = self._ctx.buffer(reserve=_buffer_size)
+        elif self._point_buffer.size != _buffer_size:
+            self._point_buffer.orphan(_buffer_size)
+
+        byte_data = pack(
+            f"i i i f f f {data_count}f",
+            x_count,
+            y_count,
+            z_count,
+            x_size,
+            y_size,
+            z_size,
+            *linear_data,
+        )
+        self._point_buffer.write(byte_data)
+
+    def draw(self):
+        self.validate_data()
+        if self.render_data is None:
+            return
+
+        old_func = self._ctx.blend_func
+        self._win.ctx.blend_func = self._ctx.BLEND_ADDITIVE
+
+        self.render_data.colour_map.use()
+        self._point_buffer.bind_to_storage_buffer()
+        self._dda_geometry.render(self._dda_shader)
+
+        self._win.ctx.blend_func = old_func

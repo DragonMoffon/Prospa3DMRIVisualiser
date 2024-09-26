@@ -20,6 +20,11 @@ readonly buffer density_data {
     float density[];
 };
 
+in vec3 ray_pos;
+in vec3 direction;
+
+out vec4 colour_fs;
+
 int get_idx(int x, int y, int z){
 
     return (min(z, i_depth-1) * i_width * i_height) + (min(y, i_height-1) * i_width) + min(x, i_width-1);
@@ -103,41 +108,35 @@ vec4 dda(in vec3 enter_pos, in vec3 direction){
     }
 }
 
-
-in vec2 vs_pos;
-
-out vec4 colour_fs;
-
 void main() {
     vec3 size = vec3(width, height, depth);
     vec3 cell_size = size / vec3(i_width, i_height, i_depth);
-    vec3 start_pos = (inv_view * vec4(camera_data.xy * vs_pos, -camera_data.z, 1.0)).xyz;
-    vec3 direction = normalize((inv_view *vec4(camera_data.xy * vs_pos, -camera_data.z, 0.0)).xyz);
+    vec3 ray_dir = normalize(direction);
 
     float z_intersect = min(
-        intersect_plane(start_pos, direction, vec3(0.0, 0.0, 1.0), 0.0),
-        intersect_plane(start_pos, direction, vec3(0.0, 0.0, -1.0), depth)
+        intersect_plane(ray_pos, ray_dir, vec3(0.0, 0.0, 1.0), 0.0),
+        intersect_plane(ray_pos, ray_dir, vec3(0.0, 0.0, -1.0), depth)
     );
-    vec3 z_point = start_pos + direction * z_intersect;
+    vec3 z_point = ray_pos + ray_dir * z_intersect;
     z_point.z = trunc(z_point.z);
 
     float y_intersect = min(
-        intersect_plane(start_pos, direction, vec3(0.0, 1.0, 0.0), 0.0),
-        intersect_plane(start_pos, direction, vec3(0.0, -1.0, 0.0), height)
+        intersect_plane(ray_pos, ray_dir, vec3(0.0, 1.0, 0.0), 0.0),
+        intersect_plane(ray_pos, ray_dir, vec3(0.0, -1.0, 0.0), height)
     );
-    vec3 y_point = start_pos + direction * y_intersect;
+    vec3 y_point = ray_pos + ray_dir * y_intersect;
     y_point.y = trunc(y_point.y);
 
     float x_intersect = min(
-        intersect_plane(start_pos, direction, vec3(1.0, 0.0, 0.0), 0.0),
-        intersect_plane(start_pos, direction, vec3(-1.0, 0.0, 0.0), width)
+        intersect_plane(ray_pos, ray_dir, vec3(1.0, 0.0, 0.0), 0.0),
+        intersect_plane(ray_pos, ray_dir, vec3(-1.0, 0.0, 0.0), width)
     );
-    vec3 x_point = start_pos + direction * x_intersect;
+    vec3 x_point = ray_pos + ray_dir * x_intersect;
     x_point.x = trunc(x_point.x);
 
     vec3 dda_start;
-    if (in_bounds(start_pos)){
-        dda_start = start_pos;
+    if (in_bounds(ray_pos)){
+        dda_start = ray_pos;
     }
     else if (isinf(x_intersect) && isinf(y_intersect) && isinf(z_intersect)){
         colour_fs = vec4(0.0);
@@ -156,6 +155,7 @@ void main() {
         colour_fs = vec4(0.0);
         return;
     }
-
-    colour_fs = dda(dda_start, direction);
+    
+    colour_fs = dda(dda_start, ray_dir);
+    // colour_fs = vec4(mod(dda_start/cell_size, 1.0), 1.0) + 0.001 * dda(dda_start, ray_dir);
 }
