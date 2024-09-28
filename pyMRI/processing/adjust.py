@@ -135,13 +135,13 @@ class InterpolateStep(Step[FourierData, FourierData]):
             print("INTERPOLATION MODE KILLS A DIMENSION")
             return _input
         # fmt: off
-        # """
+        """
         print(
             f'{x_dim} -> x: {x_count}, {x_dim/x_count}, nx: {nx_count}, {x_dim/nx_count} \n'
             f'{y_dim} -> y: {y_count}, {y_dim/y_count}, ny: {ny_count}, {y_dim/ny_count} \n'
             f'{z_dim} -> z: {z_count}, {z_dim/z_count}, nz: {nz_count}, {z_dim/nz_count}'
         )
-        # """
+        """
         # fmt: on
 
         nx_space = np.linspace(0, x_dim, nx_count)

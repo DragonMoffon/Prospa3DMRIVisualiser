@@ -2,8 +2,10 @@ from pyMRI.gui.menu.tab import GuiTab
 
 from pyMRI.processing import (
     FOURIER_STEP,
+    FILTER_STEP,
     PRE_SHIFT_STEP,
     POST_SHIFT_STEP,
+    FILE_LOADER_STEP,
     FourierMode,
     FourierNorm,
 )
@@ -15,62 +17,90 @@ class TransformTab(GuiTab):
 
     def __init__(self):
         super().__init__("Fourier")
+        self.pair_shifts = False
 
     def update(self):
         # Shift
         imgui.text("Zero Frequency Shift")
-        imgui.text("pre -")
         imgui.same_line()
-        imgui.text("x:")
+        _, self.pair_shifts = imgui.checkbox("pair shifts", self.pair_shifts)
+
+        win_width = imgui.get_window_width()
+        slider_width = win_width * 0.68 / 3.0
+        sx, sy, sz = (
+            (0, 0, 0)
+            if not FILE_LOADER_STEP.has_processed
+            else FILE_LOADER_STEP.data.voxel_data.shape
+        )
+        imgui.text("pre transform: ")
         imgui.same_line()
-        changed, x = imgui.checkbox("##pre_x", PRE_SHIFT_STEP.shift_x)
-        if changed:
-            PRE_SHIFT_STEP.shift_x = x
+        imgui.push_item_width(slider_width)
+        cx, x = imgui.slider_int("##pre-shift-x", PRE_SHIFT_STEP.shifts[0], -sx, sx)
         imgui.same_line()
-        imgui.text("y:")
+        cy, y = imgui.slider_int("##pre-shift-y", PRE_SHIFT_STEP.shifts[1], -sy, sy)
         imgui.same_line()
-        changed, y = imgui.checkbox("##pre_y", PRE_SHIFT_STEP.shift_y)
-        if changed:
-            PRE_SHIFT_STEP.shift_y = y
+        cz, z = imgui.slider_int("##pre-shift-z", PRE_SHIFT_STEP.shifts[2], -sz, sz)
+        imgui.pop_item_width()
+        if cx or cy or cz:
+            PRE_SHIFT_STEP.shifts = (x, y, z)
+            if self.pair_shifts:
+                POST_SHIFT_STEP.shifts = (-x, -y, -z)
+
+        if self.pair_shifts:
+            imgui.begin_disabled()
+
+        imgui.text("post transform:")
+        imgui.push_item_width(slider_width)
         imgui.same_line()
-        imgui.text("z:")
+        cx, x = imgui.slider_int("##post-shift-x", POST_SHIFT_STEP.shifts[0], -sx, sx)
         imgui.same_line()
-        changed, z = imgui.checkbox("##pre_z", PRE_SHIFT_STEP.shift_z)
-        if changed:
-            PRE_SHIFT_STEP.shift_z = z
+        cy, y = imgui.slider_int("##post-shift-y", POST_SHIFT_STEP.shifts[1], -sy, sy)
         imgui.same_line()
-        imgui.text("inverse:")
-        imgui.same_line()
-        changed, i = imgui.checkbox("##pre_i", PRE_SHIFT_STEP.inverse)
-        if changed:
-            PRE_SHIFT_STEP.inverse = i
-        imgui.text("post -")
-        imgui.same_line()
-        imgui.text("x:")
-        imgui.same_line()
-        changed, x = imgui.checkbox("##post_x", POST_SHIFT_STEP.shift_x)
-        if changed:
-            POST_SHIFT_STEP.shift_x = x
-        imgui.same_line()
-        imgui.text("y:")
-        imgui.same_line()
-        changed, y = imgui.checkbox("##post_y", POST_SHIFT_STEP.shift_y)
-        if changed:
-            POST_SHIFT_STEP.shift_y = y
-        imgui.same_line()
-        imgui.text("z:")
-        imgui.same_line()
-        changed, z = imgui.checkbox("##post_z", POST_SHIFT_STEP.shift_z)
-        if changed:
-            POST_SHIFT_STEP.shift_z = z
-        imgui.same_line()
-        imgui.text("inverse:")
-        imgui.same_line()
-        changed, i = imgui.checkbox("##post_i", POST_SHIFT_STEP.inverse)
-        if changed:
-            POST_SHIFT_STEP.inverse = i
+        cz, z = imgui.slider_int("##post-shift-z", POST_SHIFT_STEP.shifts[2], -sz, sz)
+        imgui.pop_item_width()
+        if cx or cy or cz:
+            POST_SHIFT_STEP.shifts = (x, y, z)
+
+        if self.pair_shifts:
+            imgui.end_disabled()
+
         # Filter
-        pass
+        imgui.text("Low Pass")
+        imgui.same_line()
+        changed, low = imgui.checkbox("##low-pass", FILTER_STEP.low_pass)
+        if changed:
+            FILTER_STEP.low_pass = low
+        if not low:
+            imgui.begin_disabled()
+        imgui.same_line()
+        imgui.text("radius")
+        imgui.same_line()
+        changed, low_rad = imgui.slider_float(
+            "##low-pass-r", FILTER_STEP.low_pass_radius, 0.0, 100.0
+        )
+        if changed:
+            FILTER_STEP.low_pass_radius = low_rad
+        if not low:
+            imgui.end_disabled()
+
+        imgui.text("High Pass")
+        imgui.same_line()
+        changed, high = imgui.checkbox("##high-pass", FILTER_STEP.high_pass)
+        if changed:
+            FILTER_STEP.high_pass = high
+        if not high:
+            imgui.begin_disabled()
+        imgui.same_line()
+        imgui.text("radius")
+        imgui.same_line()
+        changed, high_rad = imgui.slider_float(
+            "##high-pass-r", FILTER_STEP.high_pass_radius, 0.0, 100.0
+        )
+        if changed:
+            FILTER_STEP.high_pass_radius = high_rad
+        if not high:
+            imgui.end_disabled()
+
         # Fourier
         imgui.text("Fourier Transform")
         imgui.text("Transform Data:")

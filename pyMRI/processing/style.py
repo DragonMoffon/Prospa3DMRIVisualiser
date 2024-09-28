@@ -31,7 +31,6 @@ class ColourStep(Step[FourierData, RenderData]):
             img = Image.open(
                 "/home/aura/Repos/Prospa3DMRIVisualiser/pyMRI/rendering/shaders/gradient_rainbow.png"
             ).resize((COLOUR_TEXTURE_WIDTH, 1))
-            img.save("hmm.png")
             data = img.tobytes()
             self._colour_texture = self._ctx.texture(
                 (COLOUR_TEXTURE_WIDTH, 1),

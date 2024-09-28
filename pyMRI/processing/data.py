@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import NamedTuple, Literal
+from typing import NamedTuple, Literal, Self
 from enum import Enum, StrEnum, auto
 
 from numpy import ndarray, complexfloating
@@ -21,6 +21,12 @@ class FourierMode(Enum):
                 return "2D"
             case FourierMode.THREE:
                 return "3D"
+
+
+class FilterMode(Enum):
+    GAUSSIAN = auto()
+    BOX = auto()
+    CIRCLE = auto()
 
 
 class FourierNorm(StrEnum):
@@ -206,6 +212,9 @@ class FileData(NamedTuple):
     voxel_unit: Unit
     voxel_counts: tuple[int, int, int]
     voxel_data: ndarray[complexfloating]
+
+    def update(self, **kwargs) -> Self:
+        return self._replace(**kwargs)
 
 
 FourierData = FileData

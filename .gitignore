@@ -115,7 +115,7 @@ venv.bak/
 
 # mkdocs documentation
 /site
-https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
+
 # mypy
 .mypy_cache/
 .dmypy.json
@@ -131,3 +131,5 @@ dmypy.json
 cython_debug/
 
 MRI*/
+
+imgui.ini
