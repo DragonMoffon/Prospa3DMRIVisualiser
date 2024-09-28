@@ -33,6 +33,16 @@ class Step[I: NamedTuple | None, O: NamedTuple]:
 
         return self._output
 
+    def reset(self) -> None:
+        with self.unready():
+            self._reset()
+        if self._next is not None:
+            self._next.reset()
+
+    def _reset(self) -> None:
+        self._input = None
+        self._output = None
+
     def update(self, _input: NamedTuple) -> O:
         _output = self._recalculate(_input)
         if _output is None:

@@ -23,6 +23,9 @@ class ConvertStep(Step[FourierData, FourierData]):
         with self.unready():
             self.new_unit: Unit = None
 
+    def _reset(self) -> None:
+        self.new_unit = None
+
     def _recalculate(self, _input: FourierData) -> FourierData | None:
         if self.new_unit is None or self.new_unit == _input.voxel_unit:
             return _input
@@ -49,6 +52,9 @@ class ReorientStep(Step[FourierData, FourierData]):
         with self.unready():
             self.new_orientation: Orientation = None
 
+    def _reset(self) -> None:
+        self.new_orientation = None
+
     def _recalculate(self, _input: FourierData) -> FourierData:
         if self.new_orientation is None or self.new_orientation == _input.orientation:
             return _input
@@ -69,6 +75,10 @@ class InterpolateStep(Step[FourierData, FourierData]):
         with self.unready():
             self.cubify: bool = False
             self.mode: InterpolateModes = InterpolateModes.NONE
+
+    def _reset(self) -> None:
+        self.cubify = False
+        self.mode = InterpolateModes.NONE
 
     def _recalculate(self, _input: FourierData) -> FourierData:
         if self.mode is None or self.mode == InterpolateModes.NONE:

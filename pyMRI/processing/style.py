@@ -22,6 +22,11 @@ class ColourStep(Step[FourierData, RenderData]):
             self._colour_texture: Texture2D = None
             self.density_scalar: float = 0.05
             self.emission_brightness: float = 1.0
+            
+    def _reset(self):
+        self._colour_points = []
+        self.density_scalar = 0.05
+        self.emission_brightness = 1.0
 
     def _recalculate(self, _input: FourierData):
         if self._ctx is None:

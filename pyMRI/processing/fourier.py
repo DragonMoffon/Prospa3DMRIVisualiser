@@ -3,8 +3,6 @@ import numpy as np
 from pyMRI.processing.step import Step
 from pyMRI.processing.data import FileData, FourierData, FourierMode, FourierNorm
 
-from PIL import Image
-
 
 # TODO
 class ShiftStep(Step[FileData, FourierData]):
@@ -13,6 +11,9 @@ class ShiftStep(Step[FileData, FourierData]):
         super().__init__(next)
         with self.unready():
             self.shifts: tuple[int, int, int] = (0, 0, 0)
+
+    def _reset(self) -> None:
+        self.shifts = (0, 0, 0)
 
     def _recalculate(self, _input: FileData) -> FourierData:
         if not any(self.shifts):
@@ -23,11 +24,10 @@ class ShiftStep(Step[FileData, FourierData]):
         )
 
 
-def _gaussian_kernal1d(sx, nsig):
+def _gaussian_kernal1d(sx, nsig, offset = 0.0):
     x = np.linspace(-0.5 * (sx - 1), 0.5 * (sx - 1), sx)
-    gx = np.exp(-0.5 * np.square(x) / np.square(nsig))
+    gx = np.exp(-0.5 * np.square(np.abs(x) - offset) / np.square(nsig))
     return gx
-
 
 def _gaussian_kernal2d(shape, nsig):
     sx, sy = shape
@@ -39,10 +39,25 @@ def _gaussian_kernal2d(shape, nsig):
 
 def _gaussian_kernal3d(shape, nsig):
     sx, sy, sz = shape
-    gx = _gaussian_kernal1d(sx, nsig)
-    gy = _gaussian_kernal1d(sy, nsig)
-    gz = _gaussian_kernal1d(sz, nsig)
+    gx = [1,] if sx == 1 else _gaussian_kernal1d(sx, nsig)
+    gy = [1,] if sy == 1 else _gaussian_kernal1d(sy, nsig)
+    gz = [1,] if sz == 1 else _gaussian_kernal1d(sz, nsig)
     return np.einsum("i,j,k->ijk", gx, gy, gz)
+
+def _inverse_gaussian_kernal3d(shape, nsig):
+    sx, sy, sz = shape
+    gx = [1,] if sx == 1 else _gaussian_kernal1d(sx, nsig)
+    gy = [1,] if sy == 1 else _gaussian_kernal1d(sy, nsig)
+    gz = [1,] if sz == 1 else _gaussian_kernal1d(sz, nsig)
+    return 1 - np.einsum("i,j,k->ijk", gx, gy, gz)
+
+def _band_gaussian_kernal3d(shape, nsig, offset):
+    sx, sy, sz = shape
+    gx = [1,] if sx == 1 else _gaussian_kernal1d(sx, nsig, offset)
+    gy = [1,] if sy == 1 else _gaussian_kernal1d(sy, nsig, offset)
+    gz = [1,] if sz == 1 else _gaussian_kernal1d(sz, nsig, offset)
+    return np.einsum("i,j,k->ijk", gx, gy, gz)
+
 
 
 # TODO
@@ -51,14 +66,24 @@ class FilterStep(Step[FourierData, FourierData]):
     def __init__(self, next: Step):
         super().__init__(next)
         with self.unready():
-            self.low_pass: bool = True
+            self.low_pass: bool = False
             self.high_pass: bool = False
             self.band_pass: bool = False
-            self.gaussian: bool = True
             self.low_pass_radius: float = 1.0
             self.high_pass_radius: float = 1.0
             self.band_pass_radius: float = 1.0
-            self.band_pass_target: float = 1.0
+            self.band_pass_target: float = 0.0
+
+
+    def _reset(self):
+        self.low_pass = False
+        self.high_pass = False
+        self.band_pass = False
+        self.low_pass_radius = 1.0
+        self.high_pass_radius = 1.0
+        self.band_pass_radius = 1.0
+        self.band_pass_target = 0.0
+        
 
     def _recalculate(self, _input: FourierData) -> FourierData:
         if not (self.low_pass or self.high_pass or self.band_pass):
@@ -71,14 +96,14 @@ class FilterStep(Step[FourierData, FourierData]):
             filtered = filtered * low_kern / np.sum(low_kern)
 
         if self.high_pass:
-            high_kern = 1 - _gaussian_kernal3d(
+            high_kern = _inverse_gaussian_kernal3d(
                 _input.voxel_data.shape, self.high_pass_radius
             )
             filtered = filtered * high_kern / np.sum(high_kern)
 
         if self.band_pass:
-            # TODO
-            pass
+            band_kern = _band_gaussian_kernal3d(_input.voxel_data.shape, self.band_pass_radius, self.band_pass_target)
+            filtered = filtered * band_kern / np.sum(band_kern)
 
         return _input.update(voxel_data=filtered)
 
@@ -91,6 +116,12 @@ class FourierStep(Step[FileData, FourierData]):
             self.inverse: bool = False
             self.mode: FourierMode = FourierMode.THREE
             self.norm: FourierNorm = FourierNorm.BACKWARD
+
+    def _reset(self) -> None:
+        self.should = False
+        self.inverse = False
+        self.mode = FourierMode.THREE
+        self.norm = FourierNorm.BACKWARD
 
     def _recalculate(self, _input: FileData) -> FourierData | None:
         if not self.should:

@@ -65,7 +65,7 @@ class TransformTab(GuiTab):
             imgui.end_disabled()
 
         # Filter
-        imgui.text("Low Pass")
+        imgui.text("Low  Pass")
         imgui.same_line()
         changed, low = imgui.checkbox("##low-pass", FILTER_STEP.low_pass)
         if changed:
@@ -99,6 +99,31 @@ class TransformTab(GuiTab):
         if changed:
             FILTER_STEP.high_pass_radius = high_rad
         if not high:
+            imgui.end_disabled()
+
+        imgui.text("Band Pass")
+        imgui.same_line()
+        changed, band = imgui.checkbox("##band-pass", FILTER_STEP.band_pass)
+        if changed:
+            FILTER_STEP.band_pass = band
+        if not band:
+            imgui.begin_disabled()
+        imgui.same_line()
+        imgui.text("radius")
+        imgui.same_line()
+        changed, band_rad = imgui.slider_float(
+            "##band-pass-r", FILTER_STEP.band_pass_radius, 0.0, 100.0
+        )
+        if changed:
+            FILTER_STEP.band_pass_radius = band_rad
+        imgui.text('              offset')
+        imgui.same_line()
+        changed, band_off = imgui.slider_float(
+            "##band-pass-o", FILTER_STEP.band_pass_target, 0.0, float(max(sx, sy, sz))
+        )
+        if changed:
+            FILTER_STEP.band_pass_target = band_off
+        if not band:
             imgui.end_disabled()
 
         # Fourier

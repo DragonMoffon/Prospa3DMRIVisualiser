@@ -187,22 +187,22 @@ ORIENTATIONS: tuple[Orientation, ...] = (
     "zxy",
     "zyx",
 )
-ORIENTATION_MAP: dict[Orientation, tuple[int, int, int]] = {
-    "x": (2, 0, 1),
-    "y": (0, 2, 1),
-    "z": (0, 1, 2),
-    "xy": (1, 2, 0),
-    "xz": (1, 0, 2),
-    "yx": (1, 0, 2),
-    "yz": (0, 1, 2),
-    "zx": (2, 0, 1),
-    "zy": (0, 2, 1),
-    "xyz": (0, 1, 2),
-    "xzy": (0, 2, 1),
-    "yxz": (1, 0, 2),
-    "yzx": (2, 0, 1),
-    "zxy": (1, 2, 0),
-    "zyx": (2, 1, 0),
+ORIENTATION_MAP: dict[Orientation, str] = {
+    "x":'kij',#(2, 0, 1),
+    "y": 'ikj', #(0, 2, 1),
+    "z": 'ijk', #(0, 1, 2),
+    "xy": 'jki', #(1, 2, 0),
+    "xz": 'jik', #(1, 0, 2),
+    "yx": 'jik', #(1, 0, 2),
+    "yz": 'ijk', #(0, 1, 2),
+    "zx": 'kij', #(2, 0, 1),
+    "zy": 'ikj', #(0, 2, 1),
+    "xyz": 'ijk', #(0, 1, 2),
+    "xzy": 'ikj', #(0, 2, 1),
+    "yxz": 'jik', #(1, 0, 2),
+    "yzx": 'kij', #(2, 0, 1),
+    "zxy": 'jki', #(1, 2, 0),
+    "zyx": 'kji', #(2, 1, 0),
 }
 
 

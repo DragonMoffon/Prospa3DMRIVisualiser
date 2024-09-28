@@ -31,6 +31,22 @@ class FileLoaderStep(Step[None, FileData]):
 
             self.load_data = False
 
+    def _reset(self) -> None:
+        self.data_path = ""
+        self._data_loader = None
+        
+        self.parameter_path = ""
+        self._parameter_loader = None
+
+        self.exclude_parameter_file = False
+        self.can_use_parameter_file = True
+
+        self.orient_override = None
+        self.dimension_override = None
+        self.unit_override = None
+
+        self.load_data = False
+
     def _recalculate(self, _input: None) -> FileData | None:
         # If the data path is invalid then we are done here
         if self.data_path is not None and (
@@ -48,11 +64,15 @@ class FileLoaderStep(Step[None, FileData]):
                 if self.parameter_path is None
                 else Path(self.parameter_path).parent
             )
+            if self._next is not None:
+                self._next.reset()
             self._data_loader = ProspaDataLoader.fetch(start_folder)
             with self.unready():
                 self.parameter_path = ""
                 self._parameter_loader = None
         elif self._data_loader is None or self.data_path != self._data_loader.path:
+            if self._next is not None:
+                self._next.reset()
             self._data_loader = ProspaDataLoader(self.data_path)
             with self.unready():
                 self.parameter_path = ""

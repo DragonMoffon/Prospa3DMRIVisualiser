@@ -161,18 +161,21 @@ class VoxelRenderer:
         self._dda_shader["density_scalar"] = data.density_scalar
         self._dda_shader["emission_brightness"] = data.emission_brightness
 
-        orientation_shape = ORIENTATION_MAP[self.render_data.orientation]
+        orientation_shape = lx,ly, lz = ORIENTATION_MAP[self.render_data.orientation]
+        ix = 0 if lx == 'i' else 1 if lx == 'j' else 2
+        iy = 0 if ly == 'i' else 1 if ly == 'j' else 2
+        iz = 0 if lz == 'i' else 1 if lz == 'j' else 2
 
-        x_size, y_size, z_size = tuple(
-            zip(*sorted(zip(orientation_shape, data.voxel_dimensions)))
-        )[-1]
-        x_count, y_count, z_count = tuple(
-            zip(*sorted(zip(orientation_shape, data.voxel_counts)))
-        )[-1]
+        x_size = data.voxel_dimensions[ix]
+        y_size = data.voxel_dimensions[iy]
+        z_size = data.voxel_dimensions[iz]
 
-        transposed = np.transpose(self.render_data.voxel_data, orientation_shape)
+
+        transposed = np.einsum(f'ijk...->{orientation_shape}...', data.voxel_data)
+        x_count, y_count, z_count = transposed.shape
+        print(data.voxel_counts, (x_count, y_count, z_count))
         magnitude = np.abs(transposed)
-        linear_data = np.reshape(magnitude, -1)
+        linear_data = np.reshape(magnitude, -1, 'F')
         linear_data = linear_data / np.max(linear_data)
 
         data_count = len(linear_data)

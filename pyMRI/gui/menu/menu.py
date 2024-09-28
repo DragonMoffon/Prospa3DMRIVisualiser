@@ -30,7 +30,7 @@ class GuiMenu:
 
         PAD = 10.0
         win_flags = (
-            imgui.WindowFlags_.no_decoration
+            imgui.WindowFlags_.no_title_bar
             | imgui.WindowFlags_.no_resize
             | imgui.WindowFlags_.no_saved_settings
             | imgui.WindowFlags_.no_nav
