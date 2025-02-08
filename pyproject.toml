@@ -19,5 +19,13 @@ maintainers = [
     {name = "A J Andrews", email = "aand417@aucklanuni.ac.nz"}
 ]
 
+[project.scripts]
+pyMRI = "pyMRI.__main__:main"
+
+# Handle no-terminal GUI launch on Windows
+# TODO: set up better logging
+[project.gui-scripts]
+pyMRI-gui = "pyMRI.__main__:main"
+
 [tool.setuptools]
 py-modules = ['pyMRI']
