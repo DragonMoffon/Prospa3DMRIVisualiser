@@ -6,7 +6,7 @@ license = {text = "MIT License"}
 readme="README.md"
 version="2024.05.21.1"
 dependencies=[
-    "arcade>=3.0.0.dev27",
+    "arcade>=3.0.0",
     "numpy>=1.26",
     "scipy",
     "imgui-bundle"

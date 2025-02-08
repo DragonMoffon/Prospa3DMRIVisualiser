@@ -7,6 +7,8 @@ from pyMRI.processing.step import Step
 from pyMRI.processing.data import FourierData, RenderData
 
 # -- TEMP --
+from importlib.resources import files, as_file
+import pyMRI.rendering.shaders as src
 from PIL import Image
 
 COLOUR_TEXTURE_WIDTH = 256
@@ -22,7 +24,7 @@ class ColourStep(Step[FourierData, RenderData]):
             self._colour_texture: Texture2D = None
             self.density_scalar: float = 0.05
             self.emission_brightness: float = 1.0
-            
+
     def _reset(self):
         self._colour_points = []
         self.density_scalar = 0.05
@@ -33,9 +35,8 @@ class ColourStep(Step[FourierData, RenderData]):
             self._ctx = get_window().ctx
 
         if self._colour_texture is None:
-            img = Image.open(
-                "/home/aura/Repos/Prospa3DMRIVisualiser/pyMRI/rendering/shaders/gradient_rainbow.png"
-            ).resize((COLOUR_TEXTURE_WIDTH, 1))
+            with as_file((files(src) / "turbo.png")) as path:
+                img = Image.open(path).resize((COLOUR_TEXTURE_WIDTH, 1)).convert("RGBA")
             data = img.tobytes()
             self._colour_texture = self._ctx.texture(
                 (COLOUR_TEXTURE_WIDTH, 1),

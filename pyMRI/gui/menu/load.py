@@ -107,7 +107,6 @@ class LoadingTab(GuiTab):
         changed, dimensions = imgui.input_float3(
             "##dimension",
             voxel_dimensions,
-            flags=imgui.InputTextFlags_.enter_returns_true,
         )
         if voxel_dimensions[0] != float("inf"):
             FILE_LOADER_STEP.dimension_override = tuple(dimensions)
