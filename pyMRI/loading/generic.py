@@ -1,35 +1,110 @@
-from typing import Self, NamedTuple
-from pathlib import Path
-
+import sys
 import logging
+
+from pathlib import Path
+from itertools import chain
+from typing import Self, Sequence, NamedTuple
+
+
 log = logging.getLogger(Path(__file__).name)
+logging.basicConfig(level=logging.INFO)
 
 
-try: # Try to use native filepickers via plyer
+# Use plyer's platform-native bindings if installed via pyMRI[extras]
+try:
     import plyer
-    def askopenfilename(title, filetypes, initialdir) -> str:
-        """Plyer-based native file dialog binding.
+    log.info("Using plyer for platform-native filepicker")
 
-        On Linux, this has additional config options which are documented in the source,
-        but not on readthedocs at the moment. See the following for more:
-        https://github.com/kivy/plyer/blob/2.1.0/plyer/platforms/linux/filechooser.py
+    def askopenfilename(
+        title: str ="Select a file",
+        filetypes: list[tuple[str, str]] = (("All files", "*.*"),),
+        initialdir: Path | str | None = None
+    ) -> str | None:
+        """Fetch a single filename using a platform-native dialog.
+
+        This function aims to duplicate any features we need from
+        `tkinter.filedialog.askopenfilename` with 1:1 fidelity:
+
+        * accepts the same arguments and treating them the same way
+        * returns `''` when a user cancels selection
+
+        Args:
+            title:
+                Request the filepicker show a title if able.
+
+            filetypes:
+                A list of tuples consisting of:
+
+                1. A display name
+                2. One or more space-separated wildcard expressions.
+
+            initialdir:
+                A directory to open the as the initial view.
+
+        Returns:
+            A `str` containing a chosen path, or `None` if
+            selectiong failed for any non-exception reason.
         """
+        if isinstance(initialdir, (Path, str)):
+            initialdir = Path(initialdir).resolve()
+            # File paths are okay and act as "default" selections
+            if not initialdir.exists():
+                raise ValueError("Path does not exist")
+        elif initialdir is not None:
+            raise TypeError(
+                f"initialdir must be a Path, str, or None, but got {initialdir}")
+
+        # Force filepickers to open in initialdir via trailing slashes
+        use_path: str | None = None
+        if initialdir:
+            use_path = str(initialdir)
+            match (sys.platform, initialdir.is_dir()):
+                case "win32", True:
+                    suffix = "\\"
+                case _,  True:
+                    suffix = "/"
+                case _, False:
+                    suffix = ""
+            if suffix and not use_path.endswith(suffix):
+                use_path += suffix
+
         try:
-            data = plyer.filechooser.open_file(title=title, filetypes=filetypes, initialdir=initialdir)
-            log.debug(data)
-            return [data][0][0]
+            data = plyer.filechooser.open_file(
+                title=title,
+                # Despite plyer's doccstrings, space-separated *.ext
+                # seems correct on tkinter and  all major platforms,
+                # includin the most popular Linux file picker options.
+                filters=filetypes,
+                multiple=False,
+                path=use_path
+            )
+
+            if data is None:
+                log.info("Cancelled file selection")
+            elif (filenames := data[0]):
+                log.info(f"Picked file names: {', '.join((map(str, filenames)))}")
+                return filenames[0]
+
+            # Match tkinter's API 1:1 by returning empty str on cancel
+            return ''
+
         except Exception as e:
             log.warning(f"Failed to pick file: {e}")
             return None
 
+
+# The plyer platffrom bindings couldn't load found, so we'll use tkinter
 except ImportError as e:
-    log.warning("Failed to import file_chooser from plyer, falling back to tkinter")
-    from tkinter import filedialog
+    log.info("Using tkinter file picker")
+    from tkinter import filedialog, Tk
+    # Reportedly, creating + hiding a root window helps askopenfilename behave
+    # tk_root = Tk()
+    # tk_root.wm_withdraw()
     askopenfilename = filedialog.askopenfilename
 
 
 class FileLoader[T: NamedTuple]:
-    dialog_title: str = "select a file"
+    dialog_title: str = "Select a file"
     accepted_file_types: list[tuple[str, str]] = [("All Files", "*.*")]
 
     def __init__(self, path: str | Path):

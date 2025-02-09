@@ -43,7 +43,7 @@ class ProspaData(NamedTuple):
 class ProspaDataLoader(FileLoader[ProspaData]):
     dialog_title: str = "Select a Prospa Data File"
     accepted_file_types: list[tuple[str, str]] = [
-        ("Prospa Density Data", "*.*d"),
+        ("Prospa Density Data (Any)", "*.3d *.2d *.1d"),
         ("Prospa Density Data 3D", "*.3d"),
         ("Prospa Density Data 2D", "*.2d"),
         ("Prospa Density Data 1D", "*.1d"),
