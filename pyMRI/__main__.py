@@ -9,6 +9,11 @@ from sys import argv
 
 from pyMRI.loading.prospa import ProspaDataLoader
 
-if __name__ == '__main__':
+
+def main():
     launch_config = configure(*argv[1:])
     launch(launch_config)
+
+
+if __name__ == '__main__':
+    main()

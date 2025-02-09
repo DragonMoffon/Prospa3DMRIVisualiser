@@ -4,6 +4,7 @@ from os.path import exists
 from typing import TYPE_CHECKING
 
 from pyMRI.config import LaunchConfig
+from pyMRI.loading import askopenfilename
 from pyMRI.data_loading import MRIConfig, load_scan, get_scan_config
 
 from pyMRI.gui.gui import GUI
@@ -53,13 +54,13 @@ class MRI:
             self.load_data(files["data"], files["acqu"])
 
         def _get_par():
-            files["acqu"] = filedialog.askopenfilename(
+            files["acqu"] = askopenfilename(
                 title="Select a parameter file",
                 filetypes=[("Prospa Parameter file", "*.par"), ("All Files", "*.*")],
             )
             _load_data()
 
-        files["data"] = filedialog.askopenfilename(
+        files["data"] = askopenfilename(
             title="Select a data file",
             filetypes=[
                 ("Prospa 3D", "*.3d"),
