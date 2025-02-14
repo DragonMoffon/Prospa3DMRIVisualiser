@@ -1,11 +1,12 @@
-from typing import Self, NamedTuple
 from pathlib import Path
+from typing import Self, NamedTuple
 
-from tkinter import filedialog
+
+from pyMRI.loading.filepicker import askopenfilename
 
 
 class FileLoader[T: NamedTuple]:
-    dialog_title: str = "select a file"
+    dialog_title: str = "Select a file"
     accepted_file_types: list[tuple[str, str]] = [("All Files", "*.*")]
 
     def __init__(self, path: str | Path):
@@ -26,7 +27,7 @@ class FileLoader[T: NamedTuple]:
 
     @classmethod
     def fetch(cls, start_folder: Path = None) -> Self | None:
-        path_str = filedialog.askopenfilename(
+        path_str = askopenfilename(
             title=cls.dialog_title,
             filetypes=cls.accepted_file_types,
             initialdir=start_folder,
