@@ -79,14 +79,16 @@ try:
                 path=use_path
             )
 
-            if data is None:
-                log.info("Cancelled file selection")
-            elif (filenames := data[0]):
-                log.info(f"Picked file names: {', '.join((map(str, filenames)))}")
-                return filenames[0]
-
             # Match tkinter's API 1:1 by returning empty str on cancel
-            return ''
+            chosen_file = ''
+            if not data:
+                log.info("Cancelled file selection")
+            else:
+                chosen_file = data[0]
+                log.info(f"Picked file name: {chosen_file!r}")
+
+            return chosen_file
+
 
         except Exception as e:
             log.warning(f"Failed to pick file: {e}")
