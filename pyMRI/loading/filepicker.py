@@ -35,14 +35,14 @@ def get_resolved_path(path: Path | str | None = None) -> Path:
         A resolved absolute `pathlib.Path` object.
     """
     if path is None:
-        raw = Path.cwd(k)
-    elif isinstance(path, (path, str)):
-        raw = Path(p)
+        raw = Path.cwd()
+    elif isinstance(path, (Path, str)):
+        raw = Path(path)
     else:
         raise TypeError(
             f"got {path=!r} instead of a Path, str, or None")
 
-    return raw.resolve()
+    return raw.expanduser().resolve()
 
 
 def apply_platform_dir_suffix(path: Path | str) -> str:

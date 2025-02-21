@@ -1,61 +1,42 @@
 import sys
-import logging
 
 from pathlib import Path
 from typing import Final
 from unittest.mock import Mock, MagicMock
+
 import pytest
 import plyer
 
-from pyMRI.loading.filepicker import askopenfilename, apply_platform_dir_suffix
+from pyMRI.loading.filepicker import (
+    apply_platform_dir_suffix,
+    askopenfilename,
+    get_resolved_path,
+)
+
+
+class _Bad:
+    ...
+
+
+PATHLIB_PATH_ARG_TYPES: Final[tuple[type]] = (str, Path)
+NOT_PATHLIB_PATH_ARG_TYPES: Final[tuple] = (
+    (1, 2.2, ('tuples', 'are', 'not', 'ok', 'here'), _Bad()))
+
+
+@pytest.fixture(params=PATHLIB_PATH_ARG_TYPES)
+def pathlib_path_arg_type(request) -> type:
+    return request.param
+
+
+@pytest.fixture(params=NOT_PATHLIB_PATH_ARG_TYPES)
+def pathlib_path_wrong_arg_type(request):
+    return request.param
 
 
 WIN32: Final[str] = "win32"
 LINUX: Final[str] = "linux"
 MAC: Final[str] = "darwin"
 PLATFORMS: Final[tuple[str]] = (WIN32, LINUX, MAC)
-
-
-def make_mock_path(
-    str_value: str,
-    is_file: bool = False,
-    is_dir: bool = False,
-    exists: bool | None = None
-):
-    """Fake a pathlib.Path via unittest.mock's MagicMock and Mock classes.
-    
-    The exists argument auto-configures itself from is_file and is_dir
-    unless you provide a specific bool value. This allows handling an
-    edge case in file loading where the target path has been deleted
-    before we can access the data.
-
-    Args:
-        str_value:
-            What __str__ should return, i.e. str(path).
-        is_file:
-            What path.is_file() should return.
-        is_dir:
-            What path.is_dir() should return.
-        exists:
-            Set this to False to handle a very specific edge case in
-            file loading: the file or dir was deleted before we can
-            access it.
-    Returns:
-        A unittest.mock.MagicMock of a pathlib.Path configured to
-        act as just enough Path 
-    """
-    # No validation b/c this isn't user-facing code, just tests
-    if exists is None:
-        exists = is_file or is_dir
-
-    mock_path = MagicMock(Path)
-
-    mock_path.__str__ = Mock(return_value=str_value)
-    mock_path.is_file = Mock(return_value=is_file)
-    mock_path.is_dir = Mock(return_value=is_dir)
-    mock_path.exists = Mock(return_value=exists)
-
-    return mock_path
 
 
 @pytest.fixture(params=PLATFORMS)
@@ -81,10 +62,56 @@ def users_root(platform) -> str:
 
 
 @pytest.fixture
-def user_home_dir(monkeypatch, users_root: str, platform_slash: str) -> str:
+def user_home_dir(
+    monkeypatch,
+    users_root: str, platform_slash: str,
+    user_name: str = "MockUser"
+) -> str:
     """The mock user's home directory as a string."""
-    value = platform_slash.join([users_root, "MockUser"])
+    value = platform_slash.join([users_root, user_name])
     return value
+
+
+def make_mock_path(
+    str_value: str,
+    is_file: bool = False,
+    is_dir: bool = False,
+    exists: bool | None = None
+):
+    """Fake a pathlib.Path via unittest.mock's MagicMock and Mock classes.
+
+    The exists argument auto-configures itself from is_file and is_dir
+    unless you provide a specific bool value. This allows handling an
+    edge case in file loading where the target path has been deleted
+    before we can access the data.
+
+    Args:
+        str_value:
+            What __str__ should return, i.e. str(path).
+        is_file:
+            What path.is_file() should return.
+        is_dir:
+            What path.is_dir() should return.
+        exists:
+            Set this to False to handle a very specific edge case in
+            file loading: the file or dir was deleted before we can
+            access it.
+    Returns:
+        A unittest.mock.MagicMock of a pathlib.Path configured to
+        act as just enough Path
+    """
+    # No validation b/c this isn't user-facing code, just tests
+    if exists is None:
+        exists = is_file or is_dir
+
+    mock_path = MagicMock(Path)
+
+    mock_path.__str__ = Mock(return_value=str_value)
+    mock_path.is_file = Mock(return_value=is_file)
+    mock_path.is_dir = Mock(return_value=is_dir)
+    mock_path.exists = Mock(return_value=exists)
+
+    return mock_path
 
 
 @pytest.fixture
@@ -127,6 +154,39 @@ def mock_file_path(monkeypatch, raw_file_path):
     return mock_path
 
 
+def test_get_resolved_path_raies_tyoe_error_on_wrong_type(
+    pathlib_path_wrong_arg_type
+):
+    with pytest.raises(TypeError):
+        _ = get_resolved_path(pathlib_path_wrong_arg_type)
+
+    with pytest.raises(TypeError):
+        _ = get_resolved_path(path=pathlib_path_wrong_arg_type)
+
+
+
+@pytest.mark.parametrize(
+    "args, kwargs",
+    [  # Loading files is a key requirement, so let's be paranoid.
+        (tuple(), {}),
+        ((None,), {}),
+        (tuple(), dict(path=None))
+    ]
+)
+def test_get_resolved_path_returns_working_dir_for_none(args, kwargs):
+    """When given a None path argument by any means, it returns Path.cwd()"""
+    assert get_resolved_path(*args, **kwargs) == Path.cwd()
+
+
+
+def test_get_resolved_path_resolves_homedir_prefix(
+    pathlib_path_arg_type: type, raw: str = "~"
+):
+    """When given a path starting with '~', it's resolved to the user's dir."""
+    assert get_resolved_path(pathlib_path_arg_type(raw)) ==\
+        Path(pathlib_path_arg_type(raw)).expanduser().absolute()
+
+
 def test_apply_platform_dir_suffix_does_nothing_to_file_paths(mock_file_path):
     """When Path.is_file() returns True, no suffix is added."""
     assert apply_platform_dir_suffix(mock_file_path) == str(mock_file_path)
@@ -138,18 +198,15 @@ def test_apply_platform_dir_suffix_appends_platform_slash(
     mock_dir_path
 ):
     """When a Path.is_dir() returns True, a platform-appropriate suffix is added."""
-    assert apply_platform_dir_suffix(mock_dir_path).endswith(platform_slash)
+    assert apply_platform_dir_suffix(mock_dir_path)\
+        .endswith(platform_slash)
 
 
-@pytest.mark.parametrize(
-    "value_with_wrong_type",
-    (1, 2.2, ('tuples', 'are', 'not', 'ok', 'here'))
-)
 def test_plyer_askopenfilename_raises_typeerror_on_wrong_type_for_initialdir(
-    value_with_wrong_type
+    pathlib_path_wrong_arg_type
 ):
     with pytest.raises(TypeError):
-        _ = askopenfilename(initialdir=value_with_wrong_type)
+        _ = askopenfilename(initialdir=pathlib_path_wrong_arg_type)
 
 
 def test_askcancelled_file_selection_returns_empty_string(
