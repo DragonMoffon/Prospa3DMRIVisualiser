@@ -26,6 +26,11 @@ extras = [
     "plyer~=2.1.0"  # Native filepickers and storage APIs
 ]
 
+tests = [
+    "pyMRI[extras]",
+    "pytest~=8.3.4"
+]
+
 [project.scripts]
 pyMRI = "pyMRI.__main__:main"
 
