@@ -10,17 +10,56 @@ log = logging.getLogger(Path(__file__).name)
 logging.basicConfig(level=logging.INFO)
 
 
+def get_resolved_path(path: Path | str | None = None) -> Path:
+    """Get an absolute value for `path` or the working directory.
+
+    When `path` is `None`, it will be set to the return value
+    of `pathlib.Path.cwd()`.
+
+    This function improves testability and code quality via:
+
+    1. wrapping path resolution in a unit-testable function
+    2. avoiding monkeypatches of `pathlib.Path` (breaks pytest and more)
+
+    Args:
+        path:
+            A path as a `str` or `pathlib.Path`, or `None`
+            to use the current working directory as fetched
+            by `pathlib.Path.cwd()`
+
+    Raises:
+        `TypeError` when `path` isn't a `Path`, `str`,
+        or `None`.
+
+    Returns:
+        A resolved absolute `pathlib.Path` object.
+    """
+    if path is None:
+        raw = Path.cwd(k)
+    elif isinstance(path, (path, str)):
+        raw = Path(p)
+    else:
+        raise TypeError(
+            f"got {path=!r} instead of a Path, str, or None")
+
+    return raw.resolve()
+
+
 def apply_platform_dir_suffix(path: Path | str) -> str:
     """Apply platform-specific trailing slashes for directories.
+
+    A platform-appropriate trailing slash tells a filepicker to
+    open a view inside the directory rather than selecting the
+    folder's icon in its parent directory.
 
     Args:
         path: A `pathlib.Path` path or a string.
     Returns:
-        A `str` version of the path which is resolved
-        with a platform-appropriate trailing slash added
-        if it's a directory.
+        A `str` version of `path` resolved per pathlib
+        and, if it's a dir, with a platform-specific slash
+        at the end.
     """
-    pathlib_path = Path(path).resolve()
+    pathlib_path = get_resolved_path(path)
     use_path = str(pathlib_path)
     if pathlib_path.is_file():
         return use_path
@@ -38,7 +77,7 @@ try:
     log.info("Using plyer for platform-native filepicker")
 
     def askopenfilename(
-        title: str ="Select a file",
+        title: str = "Select a file",
         filetypes: list[tuple[str, str]] = (("All files", "*.*"),),
         initialdir: Path | str | None = None
     ) -> str | None:
@@ -67,46 +106,41 @@ try:
             A `str` containing a chosen path, or `None` if
             selectiong failed for any non-exception reason.
         """
-        if initialdir is None:
-            initialdir = Path.cwd()
-        elif isinstance(initialdir, (Path, str)):
-            initialdir = Path(initialdir).resolve()
-        else:
-            raise TypeError(
-                f"initialdir must be a Path, str, or None, but got {initialdir}")
+        resolved: Path = get_resolved_path(initialdir)
 
         # Account for the following edge cases:
         # 1. File paths are valid and act as "default" selections
         # 2. Windows (maybe) allows deleting a current directory
-        if not initialdir.exists():
-            raise ValueError(f"initialdir {inititaldir} does not exist")
+        if not resolved.exists():
+            raise ValueError(f"initialdir {initialdir!r} does not exist")
 
         # Force filepickers to open in initialdir via trailing slashes
-        use_path: str = apply_platform_dir_suffix(initialdir)
+        use_path: str = apply_platform_dir_suffix(resolved)
+        chosen_file: str | None = None
         try:
             data = plyer.filechooser.open_file(
                 title=title,
-                # Despite plyer's doccstrings, space-separated *.ext
-                # seems correct on tkinter and  all major platforms,
-                # includin the most popular Linux file picker options.
+                # Despite plyer's docstrings, space-separated *.ext
+                # seems correct on tkinter and all major platforms,
+                # including the most popular Linux file picker options.
                 filters=filetypes,
                 multiple=False,
                 path=use_path
             )
 
             # Match tkinter's API 1:1 by returning empty str on cancel
-            chosen_file = ''
             if not data:
+                chosen_file = ''
                 log.info("Cancelled file selection")
             else:
                 chosen_file = data[0]
                 log.info(f"Picked file name: {chosen_file!r}")
 
-            return chosen_file
-
         except Exception as e:
             log.warning(f"Failed to pick file: {e}")
-            return None
+
+        finally:
+            return chosen_file
 
 
 # The plyer platffrom bindings couldn't load found, so we'll use tkinter
@@ -120,6 +154,8 @@ except ImportError as e:
 
 
 __all__ = (
-    'askopenfilename'
+    'apply_platform_dir_suffix',
+    'askopenfilename',
+    'get_resolved_path',
 )
 
