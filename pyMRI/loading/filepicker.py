@@ -10,6 +10,28 @@ log = logging.getLogger(Path(__file__).name)
 logging.basicConfig(level=logging.INFO)
 
 
+def apply_platform_dir_suffix(path: Path | str) -> str:
+    """Apply platform-specific trailing slashes for directories.
+
+    Args:
+        path: A `pathlib.Path` path or a string.
+    Returns:
+        A `str` version of the path which is resolved
+        with a platform-appropriate trailing slash added
+        if it's a directory.
+    """
+    pathlib_path = Path(path).resolve()
+    use_path = str(pathlib_path)
+    if pathlib_path.is_file():
+        return use_path
+
+    suffix = "\\" if sys.platform == "win32" else "/"
+    if not use_path.endswith(suffix):
+        use_path += suffix
+
+    return use_path
+
+
 # Use plyer's platform-native bindings if installed via pyMRI[extras]
 try:
     import plyer
@@ -45,29 +67,22 @@ try:
             A `str` containing a chosen path, or `None` if
             selectiong failed for any non-exception reason.
         """
-        if isinstance(initialdir, (Path, str)):
+        if initialdir is None:
+            initialdir = Path.cwd()
+        elif isinstance(initialdir, (Path, str)):
             initialdir = Path(initialdir).resolve()
-            # File paths are okay and act as "default" selections
-            if not initialdir.exists():
-                raise ValueError("Path does not exist")
-        elif initialdir is not None:
+        else:
             raise TypeError(
                 f"initialdir must be a Path, str, or None, but got {initialdir}")
 
-        # Force filepickers to open in initialdir via trailing slashes
-        use_path: str | None = None
-        if initialdir:
-            use_path = str(initialdir)
-            match (sys.platform, initialdir.is_dir()):
-                case "win32", True:
-                    suffix = "\\"
-                case _,  True:
-                    suffix = "/"
-                case _, False:
-                    suffix = ""
-            if suffix and not use_path.endswith(suffix):
-                use_path += suffix
+        # Account for the following edge cases:
+        # 1. File paths are valid and act as "default" selections
+        # 2. Windows (maybe) allows deleting a current directory
+        if not initialdir.exists():
+            raise ValueError(f"initialdir {inititaldir} does not exist")
 
+        # Force filepickers to open in initialdir via trailing slashes
+        use_path: str = apply_platform_dir_suffix(initialdir)
         try:
             data = plyer.filechooser.open_file(
                 title=title,
@@ -88,7 +103,6 @@ try:
                 log.info(f"Picked file name: {chosen_file!r}")
 
             return chosen_file
-
 
         except Exception as e:
             log.warning(f"Failed to pick file: {e}")
