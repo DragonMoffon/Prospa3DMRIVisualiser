@@ -10,13 +10,74 @@ log = logging.getLogger(Path(__file__).name)
 logging.basicConfig(level=logging.INFO)
 
 
+def get_resolved_path(path: Path | str | None = None) -> Path:
+    """Get an absolute value for `path` or the working directory.
+
+    When `path` is `None`, it will be set to the return value
+    of `pathlib.Path.cwd()`.
+
+    This function improves testability and code quality via:
+
+    1. wrapping path resolution in a unit-testable function
+    2. avoiding monkeypatches of `pathlib.Path` (breaks pytest and more)
+
+    Args:
+        path:
+            A path as a `str` or `pathlib.Path`, or `None`
+            to use the current working directory as fetched
+            by `pathlib.Path.cwd()`
+
+    Raises:
+        `TypeError` when `path` isn't a `Path`, `str`,
+        or `None`.
+
+    Returns:
+        A resolved absolute `pathlib.Path` object.
+    """
+    if path is None:
+        raw = Path.cwd()
+    elif isinstance(path, (Path, str)):
+        raw = Path(path)
+    else:
+        raise TypeError(
+            f"got {path=!r} instead of a Path, str, or None")
+
+    return raw.expanduser().resolve()
+
+
+def apply_platform_dir_suffix(path: Path | str) -> str:
+    """Apply platform-specific trailing slashes for directories.
+
+    A platform-appropriate trailing slash tells a filepicker to
+    open a view inside the directory rather than selecting the
+    folder's icon in its parent directory.
+
+    Args:
+        path: A `pathlib.Path` path or a string.
+    Returns:
+        A `str` version of `path` resolved per pathlib
+        and, if it's a dir, with a platform-specific slash
+        at the end.
+    """
+    pathlib_path = get_resolved_path(path)
+    use_path = str(pathlib_path)
+    if pathlib_path.is_file():
+        return use_path
+
+    suffix = "\\" if sys.platform == "win32" else "/"
+    if not use_path.endswith(suffix):
+        use_path += suffix
+
+    return use_path
+
+
 # Use plyer's platform-native bindings if installed via pyMRI[extras]
 try:
     import plyer
     log.info("Using plyer for platform-native filepicker")
 
     def askopenfilename(
-        title: str ="Select a file",
+        title: str = "Select a file",
         filetypes: list[tuple[str, str]] = (("All files", "*.*"),),
         initialdir: Path | str | None = None
     ) -> str | None:
@@ -45,52 +106,41 @@ try:
             A `str` containing a chosen path, or `None` if
             selectiong failed for any non-exception reason.
         """
-        if isinstance(initialdir, (Path, str)):
-            initialdir = Path(initialdir).resolve()
-            # File paths are okay and act as "default" selections
-            if not initialdir.exists():
-                raise ValueError("Path does not exist")
-        elif initialdir is not None:
-            raise TypeError(
-                f"initialdir must be a Path, str, or None, but got {initialdir}")
+        resolved: Path = get_resolved_path(initialdir)
+
+        # Account for the following edge cases:
+        # 1. File paths are valid and act as "default" selections
+        # 2. Windows (maybe) allows deleting a current directory
+        if not resolved.exists():
+            raise ValueError(f"initialdir {initialdir!r} does not exist")
 
         # Force filepickers to open in initialdir via trailing slashes
-        use_path: str | None = None
-        if initialdir:
-            use_path = str(initialdir)
-            match (sys.platform, initialdir.is_dir()):
-                case "win32", True:
-                    suffix = "\\"
-                case _,  True:
-                    suffix = "/"
-                case _, False:
-                    suffix = ""
-            if suffix and not use_path.endswith(suffix):
-                use_path += suffix
-
+        use_path: str = apply_platform_dir_suffix(resolved)
+        chosen_file: str | None = None
         try:
             data = plyer.filechooser.open_file(
                 title=title,
-                # Despite plyer's doccstrings, space-separated *.ext
-                # seems correct on tkinter and  all major platforms,
-                # includin the most popular Linux file picker options.
+                # Despite plyer's docstrings, space-separated *.ext
+                # seems correct on tkinter and all major platforms,
+                # including the most popular Linux file picker options.
                 filters=filetypes,
                 multiple=False,
                 path=use_path
             )
 
-            if data is None:
-                log.info("Cancelled file selection")
-            elif (filenames := data[0]):
-                log.info(f"Picked file names: {', '.join((map(str, filenames)))}")
-                return filenames[0]
-
             # Match tkinter's API 1:1 by returning empty str on cancel
-            return ''
+            if not data:
+                chosen_file = ''
+                log.info("Cancelled file selection")
+            else:
+                chosen_file = data[0]
+                log.info(f"Picked file name: {chosen_file!r}")
 
         except Exception as e:
             log.warning(f"Failed to pick file: {e}")
-            return None
+
+        finally:
+            return chosen_file
 
 
 # The plyer platffrom bindings couldn't load found, so we'll use tkinter
@@ -104,6 +154,8 @@ except ImportError as e:
 
 
 __all__ = (
-    'askopenfilename'
+    'apply_platform_dir_suffix',
+    'askopenfilename',
+    'get_resolved_path',
 )
 
