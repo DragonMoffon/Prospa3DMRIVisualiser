@@ -5,7 +5,7 @@ from enum import Enum
 
 from arcade import get_window
 
-from imgui_bundle import imgui
+from imgui_bundle import imgui. imgui_ctx
 
 
 class WarningMode(Enum):
@@ -70,9 +70,8 @@ class GuiPopup:
         imgui.set_next_window_bg_alpha(0.35)
 
         imgui.begin(self._title, False, POPUP_FLAGS)
-        imgui.push_style_color(COLOR_TEXT_FLAG, self._colour)
-        imgui.text(self._title)
-        imgui.pop_style_color()
+        with imgui_ctx.push_style_color(COLOR_TEXT_FLAG, self._colour):
+            imgui.text(self._title)
 
         self.build_body()
         self.build_buttons()
