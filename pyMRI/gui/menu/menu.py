@@ -1,4 +1,4 @@
-from imgui_bundle import imgui
+from imgui_bundle import imgui. imgui_ctx
 
 from arcade import get_window
 
@@ -64,11 +64,10 @@ class GuiMenu:
         imgui.set_next_window_bg_alpha(0.35)
 
         imgui.begin("Control Panel", False, win_flags)
-        if imgui.begin_tab_bar("#tabs"):
+        with imgui_ctx.begin_tab_bar("#tabs"):
             for tab in self._tabs:
                 selected, *_ = imgui.begin_tab_item(tab.title)
                 if selected:
                     tab.update()
                     imgui.end_tab_item()
-            imgui.end_tab_bar()
         imgui.end()
