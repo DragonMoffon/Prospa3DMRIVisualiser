@@ -10,7 +10,7 @@ from pyMRI.processing import (
     FourierNorm,
 )
 
-from imgui_bundle import imgui
+from imgui_bundle import imgui, imgui_ctx
 
 
 class TransformTab(GuiTab):
@@ -34,13 +34,13 @@ class TransformTab(GuiTab):
         )
         imgui.text("pre transform: ")
         imgui.same_line()
-        imgui.push_item_width(slider_width)
-        cx, x = imgui.slider_int("##pre-shift-x", PRE_SHIFT_STEP.shifts[0], -sx, sx)
-        imgui.same_line()
-        cy, y = imgui.slider_int("##pre-shift-y", PRE_SHIFT_STEP.shifts[1], -sy, sy)
-        imgui.same_line()
-        cz, z = imgui.slider_int("##pre-shift-z", PRE_SHIFT_STEP.shifts[2], -sz, sz)
-        imgui.pop_item_width()
+        with imgui_ctx.push_item_width(slider_width):
+            cx, x = imgui.slider_int("##pre-shift-x", PRE_SHIFT_STEP.shifts[0], -sx, sx)
+            imgui.same_line()
+            cy, y = imgui.slider_int("##pre-shift-y", PRE_SHIFT_STEP.shifts[1], -sy, sy)
+            imgui.same_line()
+            cz, z = imgui.slider_int("##pre-shift-z", PRE_SHIFT_STEP.shifts[2], -sz, sz)
+
         if cx or cy or cz:
             PRE_SHIFT_STEP.shifts = (x, y, z)
             if self.pair_shifts:
@@ -50,14 +50,14 @@ class TransformTab(GuiTab):
             imgui.begin_disabled()
 
         imgui.text("post transform:")
-        imgui.push_item_width(slider_width)
-        imgui.same_line()
-        cx, x = imgui.slider_int("##post-shift-x", POST_SHIFT_STEP.shifts[0], -sx, sx)
-        imgui.same_line()
-        cy, y = imgui.slider_int("##post-shift-y", POST_SHIFT_STEP.shifts[1], -sy, sy)
-        imgui.same_line()
-        cz, z = imgui.slider_int("##post-shift-z", POST_SHIFT_STEP.shifts[2], -sz, sz)
-        imgui.pop_item_width()
+        with imgui_ctx.push_item_width(slider_width):
+            imgui.same_line()
+            cx, x = imgui.slider_int("##post-shift-x", POST_SHIFT_STEP.shifts[0], -sx, sx)
+            imgui.same_line()
+            cy, y = imgui.slider_int("##post-shift-y", POST_SHIFT_STEP.shifts[1], -sy, sy)
+            imgui.same_line()
+            cz, z = imgui.slider_int("##post-shift-z", POST_SHIFT_STEP.shifts[2], -sz, sz)
+
         if cx or cy or cz:
             POST_SHIFT_STEP.shifts = (x, y, z)
 
