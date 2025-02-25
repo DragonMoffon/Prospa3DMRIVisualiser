@@ -1,4 +1,4 @@
-from imgui_bundle import imgui
+from imgui_bundle import imgui, imgui_ctx
 
 from pyMRI.gui.menu.tab import GuiTab
 from pyMRI.processing import Unit, ORIENTATIONS, FILE_LOADER_STEP
@@ -12,13 +12,14 @@ class LoadingTab(GuiTab):
     def update(self):
         imgui.text("Data File:")
         x, _ = imgui.get_content_region_avail()
-        imgui.push_item_width(x - 80.0)
-        load_data, path = imgui.input_text(
-            "##data file",
-            FILE_LOADER_STEP.data_path or "",
-            imgui.InputTextFlags_.enter_returns_true,
-        )
-        imgui.pop_item_width()
+
+        with imgui_ctx.push_item_width(x - 80.0):
+            load_data, path = imgui.input_text(
+                "##data file",
+                FILE_LOADER_STEP.data_path or "",
+                imgui.InputTextFlags_.enter_returns_true,
+            )
+
         imgui.same_line()
         browse_data = imgui.button("browse##data", (70.0, 0.0))
 
@@ -48,13 +49,13 @@ class LoadingTab(GuiTab):
             # Parameter File: [file loc] {browse button}
             imgui.text("Parameter File:")
             x, _ = imgui.get_content_region_avail()
-            imgui.push_item_width(x - 80.0)
-            load_para, path = imgui.input_text(
-                "##parameter file",
-                FILE_LOADER_STEP.parameter_path or "",
-                imgui.InputTextFlags_.enter_returns_true,
-            )
-            imgui.pop_item_width()
+            with imgui_ctx.push_item_width(x - 80.0):
+                load_para, path = imgui.input_text(
+                    "##parameter file",
+                    FILE_LOADER_STEP.parameter_path or "",
+                    imgui.InputTextFlags_.enter_returns_true,
+                )
+
             imgui.same_line()
             browse_para = imgui.button("browse##para", (70.0, 0.0))
 
